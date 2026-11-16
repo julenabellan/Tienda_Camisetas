@@ -6,11 +6,14 @@
 // de la que tengas permiso. Si la imagen falla, el juego dibuja la camiseta en SVG.
 //
 // k(equipo, año, equipación, marca, valorBase, rareza 1-4, color1, color2, dibujo, esSelección)
-// dibujo: checks | solid | stripes | hoops | halves | sash | sleeves | band | vband | chevron
+// dibujo: zigzag | graphic | yoke | wave | cross | checks | solid
+// c3 (opcional): tercer color para el dibujo 'graphic' | stripes | hoops | halves | sash | sleeves | band | vband | chevron
 
-function k(team, year, type, brand, base, rarity, c1, c2, pattern, nat) {
+function k(team, year, type, brand, base, rarity, c1, c2, pattern, nat, c3) {
   const id = (team + '-' + year + '-' + type).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  return { id, team, year, type, brand, base, rarity, c1, c2, pattern, nat: !!nat, img: '' };
+  const h = [...id].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  const collar = year <= 1999 ? ['polo', 'v', 'round'][h % 3] : ['round', 'v'][h % 2];
+  return { id, team, year, type, brand, base, rarity, c1, c2, c3: c3 || c2, pattern, collar, nat: !!nat, img: '' };
 }
 
 const KITS = [
@@ -95,6 +98,35 @@ const KITS = [
   k('Camerún', 1990, 'Portero', 'Puma', 170, 3, '#111111', '#FFD500', 'solid', true),
   k('Manchester United', 1999, 'Portero', 'Umbro', 90, 2, '#2BB673', '#111111', 'band'),
   k('Arsenal', 1994, 'Portero', 'Adidas', 80, 2, '#E06A1B', '#111111', 'sleeves'),
+
+  // Tercera tanda: camisetas retro del estilo de las que se catalogan en Football Kit Archive
+  // (equipo, temporada, tipo y marca). Colores y dibujos son aproximaciones propias.
+  k('Inglaterra', 1992, 'Local', 'Umbro', 170, 3, '#FFFFFF', '#1C2D6B', 'solid', true),
+  k('Japón', 1998, 'Local', 'Asics', 150, 3, '#1B3E9A', '#FFFFFF', 'graphic', true, '#6C8FE0'),
+  k('Jamaica', 1998, 'Local', 'Kappa', 190, 4, '#FED100', '#009B3A', 'yoke', true),
+  k('Nigeria', 1998, 'Local', 'Nike', 200, 3, '#2E9B3F', '#FFFFFF', 'zigzag', true),
+  k('Irlanda', 1994, 'Local', 'Adidas', 120, 2, '#169B62', '#FFFFFF', 'yoke', true),
+  k('Suecia', 1994, 'Local', 'Adidas', 130, 2, '#FCD116', '#006AA7', 'band', true),
+  k('Sudáfrica', 1998, 'Local', 'Umbro', 140, 2, '#FCD116', '#007749', 'wave', true),
+  k('Letonia', 1992, 'Local', 'Sin marca', 150, 3, '#7B1E3A', '#FFFFFF', 'graphic', true, '#E8A3BE'),
+  k('Dinamarca', 1992, 'Visitante', 'Hummel', 230, 4, '#FFFFFF', '#C60C30', 'cross', true),
+  k('Brasil', 1998, 'Visitante', 'Nike', 160, 3, '#1B3E9A', '#FFD500', 'sleeves', true),
+  k('Francia', 1998, 'Visitante', 'Adidas', 180, 3, '#D52B1E', '#0B2C8A', 'yoke', true),
+  k('Coventry City', 1996, 'Visitante', 'Pony', 130, 3, '#D4001B', '#14235E', 'checks'),
+  k('Liverpool', 1991, 'Local', 'Adidas', 200, 3, '#C8102E', '#FFFFFF', 'solid'),
+  k('Athletic Club', 1996, 'Local', 'Kappa', 150, 3, '#D2122E', '#FFFFFF', 'stripes'),
+  k('Real Betis', 1996, 'Local', 'Kappa', 130, 2, '#FFFFFF', '#0A9A4A', 'stripes'),
+  k('Estrella Roja', 1996, 'Local', 'Kappa', 150, 3, '#D4001B', '#FFFFFF', 'stripes'),
+  k('Palermo', 1996, 'Local', 'Kappa', 110, 2, '#F2A3B8', '#111111', 'solid'),
+  k('Oporto', 1997, 'Local', 'Kappa', 150, 3, '#FFFFFF', '#0A3A8C', 'stripes'),
+  k('Manchester City', 1997, 'Visitante', 'Kappa', 120, 2, '#1B1B1B', '#6CABDD', 'yoke'),
+  k('Fiorentina', 1995, 'Local', 'Reebok', 160, 3, '#5B2C83', '#FFFFFF', 'solid'),
+  k('Urawa Reds', 1996, 'Local', 'Mizuno', 140, 3, '#D4001B', '#111111', 'graphic', false, '#FFFFFF'),
+  k('Nagoya Grampus', 1995, 'Local', 'Mizuno', 130, 3, '#D4001B', '#F5C400', 'graphic', false, '#FFFFFF'),
+  k('Kyoto Sanga', 1996, 'Local', 'Mizuno', 120, 3, '#5B2C83', '#FFFFFF', 'graphic', false, '#C9A7E8'),
+  k('Blackburn Rovers', 1995, 'Local', 'Asics', 170, 3, '#FFFFFF', '#0057B8', 'halves'),
+  k('Aston Villa', 1994, 'Local', 'Asics', 110, 2, '#7B1E3A', '#8FC1E3', 'sleeves'),
+  k('Parma', 1999, 'Local', 'Champion', 150, 3, '#FFFFFF', '#FDE100', 'cross', false, '#003DA5'),
 ];
 
 const KIT_BY_ID = Object.fromEntries(KITS.map(x => [x.id, x]));

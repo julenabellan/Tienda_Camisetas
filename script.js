@@ -150,6 +150,15 @@
   }
 
   // ---------- Dibujo de camisetas ----------
+  function collarSVG(kit) {
+    const c1 = kit.c1, c2 = kit.c2;
+    if (kit.collar === 'v') return `<path d="M70 20 L100 56 L130 20" fill="none" stroke="${c2}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (kit.collar === 'polo') return `<path d="M70 20 Q100 40 130 20" fill="none" stroke="${c2}" stroke-width="5"/>` +
+      `<path d="M70 20 L88 46 L100 36 L112 46 L130 20" fill="${c1}" stroke="${c2}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<path d="M100 36 V60" stroke="${c2}" stroke-width="2"/><circle cx="100" cy="50" r="1.8" fill="${c2}"/>`;
+    return `<path d="M70 20 Q100 44 130 20" fill="none" stroke="${c2}" stroke-width="6" stroke-linecap="round"/>`;
+  }
+
   function shirtSVG(kit) {
     const id = 'cl' + (svgCount++);
     const body = 'M70 20 L40 32 L8 70 L34 92 L52 78 L52 180 L148 180 L148 78 L166 92 L192 70 L160 32 L130 20 Q100 44 70 20 Z';
@@ -181,6 +190,29 @@
         pat = `<polyline points="52,92 100,128 148,92" fill="none" stroke="${c2}" stroke-width="14"/>` +
               `<polyline points="52,122 100,158 148,122" fill="none" stroke="${c2}" stroke-width="14"/>`;
         break;
+      case 'zigzag':
+        for (let y = 62; y < 190; y += 34) {
+          let pts = '';
+          for (let x = -10, up = 0; x <= 210; x += 22, up ^= 1) pts += `${x},${y + (up ? -11 : 11)} `;
+          pat += `<polyline points="${pts}" fill="none" stroke="${c2}" stroke-width="11" stroke-linejoin="miter"/>`;
+        }
+        break;
+      case 'graphic': {
+        const c3 = kit.c3 || c2;
+        pat = `<polygon points="-10,210 70,84 150,210" fill="${c2}" opacity=".92"/><polygon points="70,210 150,56 210,160 210,210" fill="${c3}" opacity=".92"/>` +
+              `<polygon points="-10,-10 84,-10 -10,64" fill="${c3}"/><polygon points="116,-10 210,-10 210,40" fill="${c2}" opacity=".9"/>`;
+        break;
+      }
+      case 'yoke':
+        pat = `<path d="M0 0 H200 V64 L100 96 L0 64 Z" fill="${c2}"/>`;
+        break;
+      case 'wave':
+        for (let y = 56; y < 190; y += 34) pat += `<path d="M-5 ${y} Q22 ${y - 16} 50 ${y} T105 ${y} T160 ${y} T215 ${y}" fill="none" stroke="${c2}" stroke-width="11"/>`;
+        break;
+      case 'cross':
+        pat = `<rect x="84" y="0" width="32" height="200" fill="${c2}"/><rect x="0" y="82" width="200" height="30" fill="${c2}"/>` +
+              `<rect x="91" y="0" width="18" height="200" fill="${kit.c3 || c1}"/><rect x="0" y="89" width="200" height="16" fill="${kit.c3 || c1}"/>`;
+        break;
       case 'checks':
         for (let y = 0; y < 200; y += 25) for (let x = (y / 25) % 2 ? 0 : 25; x < 200; x += 50) pat += `<rect x="${x}" y="${y}" width="25" height="25" fill="${c2}"/>`;
         break;
@@ -200,7 +232,7 @@
         ${pat}
         <rect width="200" height="200" fill="url(#${id}g)"/>
       </g>
-      <path d="M70 20 Q100 44 130 20" fill="none" stroke="${c2}" stroke-width="6" stroke-linecap="round"/>
+      ${collarSVG(kit)}
       <path d="M8 70 L34 92 M192 70 L166 92" stroke="${c2}" stroke-width="5" stroke-linecap="round"/>
       <circle cx="125" cy="62" r="6.5" fill="${c2}" stroke="rgba(0,0,0,.3)"/>
       <rect x="73" y="58" width="10" height="3" rx="1.5" fill="${c2}"/>
@@ -406,12 +438,12 @@
 
     const nextLevel = LEVEL_XP[level()];
     $('#panel-stats').innerHTML = `
-      <div><small>Camisetas vendidas</small><b>${S.stats.sold}</b></div>
-      <div><small>Ingresos</small><b>${fmt(S.stats.revenue)}</b></div>
-      <div><small>Beneficio en ventas</small><b>${fmt(S.stats.profit)}</b></div>
-      <div><small>Ventas perdidas por talla</small><b>${Object.values(S.sizeLost).reduce((a, b) => a + b, 0)}</b></div>
-      <div><small>Alquiler diario</small><b>${fmt(RENT)}</b></div>
-      <div><small>Ojo de experto</small><b>Nivel ${level()}${nextLevel ? ` · ${S.xp}/${nextLevel}` : ' · máximo'}</b></div>`;
+      <div><i>👕</i><small>Camisetas vendidas</small><b>${S.stats.sold}</b></div>
+      <div><i>💶</i><small>Ingresos</small><b>${fmt(S.stats.revenue)}</b></div>
+      <div><i>📈</i><small>Beneficio en ventas</small><b>${fmt(S.stats.profit)}</b></div>
+      <div><i>🧩</i><small>Ventas perdidas por talla</small><b>${Object.values(S.sizeLost).reduce((a, b) => a + b, 0)}</b></div>
+      <div><i>🏠</i><small>Alquiler diario</small><b>${fmt(RENT)}</b></div>
+      <div><i>👁️</i><small>Ojo de experto</small><b>Nivel ${level()}${nextLevel ? ` · ${S.xp}/${nextLevel}` : ' · máximo'}</b></div>`;
     $('#news-list').innerHTML = S.news.slice(0, 40).map(n => `<li><span>Día ${n.day}</span>${n.text}</li>`).join('');
     renderTrends();
   }
@@ -419,7 +451,8 @@
   function renderTrends() {
     const rows = Object.entries(S.trends).map(([key, t]) => {
       const name = key === '__nat' ? 'Selecciones' : key;
-      return `<li><b>${name}</b> ${t.mult >= 1 ? '+' : ''}${Math.round((t.mult - 1) * 100)} % · ${t.left} d</li>`;
+      const up = t.mult >= 1;
+      return `<li class="${up ? 'up' : 'down'}"><span class="arrow">${up ? '▲' : '▼'}</span><b>${name}</b><em>${up ? '+' : ''}${Math.round((t.mult - 1) * 100)} %</em><small>${t.left} d</small></li>`;
     });
     $('#trend-list').innerHTML = rows.length ? rows.join('') : '<li>Sin tendencias activas.</li>';
   }
@@ -940,12 +973,11 @@
 
     const html = `
       <div class="report">
-        <h3>Cierre del día ${S.day - 1}</h3>
-        <p class="sub">${report.customers} clientes · Ingresos ${fmt(report.income)}</p>
-        ${report.sales.length ? `<h4>Ventas</h4><ul>${report.sales.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
-        ${report.lost.length ? `<h4>Ventas perdidas</h4><ul>${report.lost.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
-        <h4>Gastos</h4><ul>${lines.join('')}</ul>
-        ${todayNews.length ? `<h4>Noticias para mañana</h4><ul>${todayNews.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
+        <div class="report-banner"><span>🌙</span><div><h3>Cierre del día ${S.day - 1}</h3><p>${report.customers} clientes</p></div><b>${fmt(report.income)}</b></div>
+        ${report.sales.length ? `<h4>💰 Ventas</h4><ul class="list-ok">${report.sales.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
+        ${report.lost.length ? `<h4>🚪 Ventas perdidas</h4><ul class="list-bad">${report.lost.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
+        <h4>🧾 Gastos</h4><ul>${lines.join('')}</ul>
+        ${todayNews.length ? `<h4>📰 Noticias para mañana</h4><ul>${todayNews.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
         <div class="actions"><button class="btn primary" data-choice="ok">Empezar el día ${S.day}</button></div>
       </div>`;
     save(); renderAll();
