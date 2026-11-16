@@ -243,8 +243,25 @@
     }
   }
 
+  // Logos en PNG por marca (ruta relativa a index.html). De momento, solo Adidas.
+  // El PNG se tiñe con el color de la tinta de la camiseta (alfa del PNG + color), así que debe tener fondo transparente.
+  const BRAND_LOGOS = { Adidas: 'Logos/Adidas.png' };
+
   // Logo de la marca en el pecho (lado derecho del jugador)
-  function brandLogo(kit) {
+  function brandLogo(kit, id) {
+    const drawn = brandLogoDrawn(kit);
+    const src = BRAND_LOGOS[kit.brand];
+    if (!src) return drawn;
+    const ink = inkOn(kit.c1, kit.c2);
+    // si el PNG no carga, se muestra el dibujo de siempre
+    return `<g><g style="display:none">${drawn}</g>` +
+      `<filter id="${id}b" color-interpolation-filters="sRGB"><feFlood flood-color="${ink}"/><feComposite in2="SourceAlpha" operator="in"/></filter>` +
+      `<image href="${src}" x="68" y="49" width="26" height="18" preserveAspectRatio="xMidYMid meet" filter="url(#${id}b)" ` +
+      `onerror="this.parentNode.firstElementChild.style.display='';this.remove()"/></g>`;
+  }
+
+  // Logo dibujado a mano (se usa si la marca no tiene PNG o si el PNG falla)
+  function brandLogoDrawn(kit) {
     const ink = inkOn(kit.c1, kit.c2);
     switch (kit.brand) {
       case 'Adidas': return `<path d="M72 64 L75 60 M76 64 L80 57 M80.5 64 L85.5 54" stroke="${ink}" stroke-width="2.2" stroke-linecap="round"/>`;
@@ -349,7 +366,7 @@
       ${collarSVG(kit)}
       <path d="M8 70 L34 92 M192 70 L166 92" stroke="${c2}" stroke-width="5" stroke-linecap="round"/>
       ${crestSVG(kit)}
-      ${brandLogo(kit)}
+      ${brandLogo(kit, id)}
       <path d="M52 168 H148 M60 100 Q70 130 62 160 M140 100 Q130 130 138 160" fill="none" stroke="rgba(0,0,0,.14)" stroke-width="3"/>
       <path d="${body}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="2" stroke-linejoin="round"/>
     </svg>`;
@@ -699,7 +716,6 @@
   function renderAll() {
     // limpia del escaparate lo que ya no está en stock o no cabe
     S.featured = S.featured.filter(uid => S.stock.some(i => i.uid === uid)).slice(0, maxFeatured());
-    svgCount = 0;
     const f = fame();
     if (S.fameTier != null && f.tier !== S.fameTier) {
       const msg = f.tier > S.fameTier
