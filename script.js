@@ -210,10 +210,12 @@
   function crestSVG(kit) {
     // con rayas, el escudo queda a la misma distancia del centro que el logo, pero en el lado opuesto
     const cx = kit.pattern === 'stripes' ? 200 - logoSpot(kit).cx : 125;
+    // con rayas el escudo cae sobre una raya c2: se rellena con un color que contraste (nunca el de la raya)
+    const fill = kit.pattern === 'stripes' ? inkOn(kit.c2, kit.c1) : kit.c2;
     if (kit.nat && kit.flag) {
       return `<text x="${cx}" y="67.5" font-size="17" text-anchor="middle" style="font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${kit.flag}</text>`;
     }
-    return `<circle cx="${cx}" cy="62" r="6.5" fill="${kit.c2}" stroke="rgba(0,0,0,.3)"/>`;
+    return `<circle cx="${cx}" cy="62" r="6.5" fill="${fill}" stroke="rgba(0,0,0,.3)"/>`;
   }
 
   // ---------- Detalles de marca ----------
