@@ -69,7 +69,7 @@ const KITS = [
   k('España', 2011, 'Local', 'Adidas', 100, 2, '#C8102E', '#F5C400', 'solid', true),
 
   k('Francia', 1998, 'Local', 'Adidas', 260, 4, '#0B2C8A', '#D52B1E', 'solid', true),
-  k('Francia', 1998, 'Visitante', 'Adidas', 180, 3, '#D52B1E', '#0B2C8A', 'yoke', true),
+  k('Francia', 1998, 'Visitante', 'Adidas', 180, 3, '#FFFFFF', '#0B2C8A', 'hoops', true, '#D52B1E'),   // KA: Hoops, White / Red / Blue
   k('Francia', 2018, 'Visitante', 'Nike', 100, 2, '#FFFFFF', '#1E3A8A', 'graphic', true),
 
   k('Inglaterra', 1992, 'Local', 'Umbro', 170, 3, '#FFFFFF', '#1C2D6B', 'solid', true),
@@ -124,8 +124,8 @@ const KITS = [
   k('Barcelona', 1992, 'Local', 'Meyba', 180, 3, '#A50044', '#004D98', 'stripes'),
   k('Barcelona', 1997, 'Visitante', 'Kappa', 150, 3, '#F5D000', '#A50044', 'band'),
   k('Barcelona', 1999, 'Local', 'Nike', 245, 4, '#A50044', '#004D98', 'stripes'),
-  k('Barcelona', 2000, 'Visitante', 'Nike', 150, 3, '#F5C400', '#004D98', 'solid'),
-  k('Barcelona', 2001, 'Visitante', 'Nike', 145, 3, '#111111', '#A50044', 'band'),
+  k('Barcelona', 2000, 'Visitante', 'Nike', 150, 3, '#C9CCD1', '#A50044', 'solid'),   // KA: Plain, Gray / Red (00-01)
+  k('Barcelona', 2001, 'Visitante', 'Nike', 145, 3, '#F5C400', '#004D98', 'band'),   // KA: Single stripe, Gold / Blue / Red (01-02)
   k('Barcelona', 2002, 'Tercera', 'Nike', 155, 3, '#001F5B', '#A50044', 'solid'),
   k('Barcelona', 2003, 'Visitante', 'Nike', 150, 3, '#F5C400', '#A50044', 'solid'),
   k('Barcelona', 2004, 'Visitante', 'Nike', 145, 3, '#6A1B9A', '#A50044', 'solid'),
@@ -137,7 +137,7 @@ const KITS = [
   k('Barcelona', 2008, 'Tercera', 'Nike', 170, 3, '#7F0000', '#F5C400', 'solid'),
   k('Barcelona', 2009, 'Visitante', 'Nike', 170, 3, '#F7E017', '#004D98', 'solid'),
   k('Barcelona', 2010, 'Local', 'Nike', 280, 4, '#A50044', '#004D98', 'stripes'),
-  k('Barcelona', 2010, 'Visitante', 'Nike', 160, 3, '#66CC66', '#004D98', 'solid'),
+  k('Barcelona', 2010, 'Visitante', 'Nike', 160, 3, '#66CC66', '#004D98', 'band', false, '#A50044'),   // KA: Chest band, Green / Blue / Red
   k('Barcelona', 2011, 'Local', 'Nike', 70, 1, '#A50044', '#004D98', 'stripes'),
   k('Barcelona', 2012, 'Visitante', 'Nike', 150, 2, '#FF6A00', '#A50044', 'graphic'),
   k('Barcelona', 2014, 'Tercera', 'Nike', 145, 2, '#7A0019', '#F5C400', 'solid'),
@@ -173,11 +173,11 @@ const KITS = [
   k('Real Madrid', 1995, 'Visitante', 'Kelme', 170, 3, '#6A1B9A', '#FFFFFF', 'solid'),
   k('Real Madrid', 1996, 'Tercera', 'Kelme', 100, 2, '#2B2B6B', '#F5C400', 'solid'),
   k('Real Madrid', 1997, 'Visitante', 'Kelme', 180, 3, '#2C2C54', '#FFD700', 'solid'),
-  k('Real Madrid', 1998, 'Local', 'Kelme', 140, 2, '#FFFFFF', '#1B2A6B', 'solid'),
-  k('Real Madrid', 1998, 'Visitante', 'Adidas', 175, 3, '#001F5B', '#F5C400', 'solid'),
+  k('Real Madrid', 1997, 'Local', 'Kelme', 140, 2, '#FFFFFF', '#1B2A6B', 'solid'),   // Kelme = temporada 97-98 (Adidas empieza en la 98-99)
+  k('Real Madrid', 1998, 'Visitante', 'Adidas', 175, 3, '#1B3F94', '#FFFFFF', 'hoops'),   // KA: Hoops, Blue / White
   k('Real Madrid', 1999, 'Local', 'Adidas', 250, 4, '#FFFFFF', '#1B2A6B', 'solid'),
   k('Real Madrid', 1999, 'Visitante', 'Adidas', 230, 4, '#1B2A6B', '#F5C400', 'solid'),
-  k('Real Madrid', 2000, 'Tercera', 'Adidas', 180, 3, '#111111', '#C0C0C0', 'solid'),
+  k('Real Madrid', 2000, 'Visitante', 'Adidas', 180, 3, '#111111', '#D4AF37', 'solid'),   // KA: Plain, Black / Gold
   k('Real Madrid', 2001, 'Centenario', 'Adidas', 320, 4, '#FFFFFF', '#D4AF37', 'solid'),
   k('Real Madrid', 2002, 'Visitante', 'Adidas', 180, 3, '#111111', '#FFFFFF', 'solid'),
   k('Real Madrid', 2003, 'Tercera', 'Adidas', 170, 3, '#001F5B', '#C0C0C0', 'solid'),
@@ -245,7 +245,7 @@ const KITS = [
   k('Manchester United', 1994, 'Local', 'Umbro', 170, 3, '#DA291C', '#FFFFFF', 'solid'),
   k('Manchester United', 1996, 'Visitante', 'Umbro', 160, 3, '#9AA0A6', '#111111', 'solid'),
   k('Manchester United', 1997, 'Visitante', 'Umbro', 180, 3, '#FFFFFF', '#1A1A1A', 'graphic'),
-  k('Manchester United', 1999, 'Local', 'Umbro', 150, 3, '#DA291C', '#111111', 'solid'),
+  k('Manchester United', 1999, 'Local', 'Umbro', 150, 3, '#DA291C', '#FFFFFF', 'solid'),   // KA: Plain, Red / White
   k('Manchester United', 1999, 'Portero', 'Umbro', 90, 2, '#2BB673', '#111111', 'band'),
   k('Manchester United', 2007, 'Local', 'Nike', 220, 3, '#DA291C', '#FFFFFF', 'solid'),
   k('Manchester United', 2008, 'Local', 'Nike', 230, 4, '#DA291C', '#FFFFFF', 'solid'),
@@ -262,7 +262,7 @@ const KITS = [
   k('Celtic', 2003, 'Local', 'Umbro', 110, 2, '#00843D', '#FFFFFF', 'hoops'),
 
   k('Rangers', 1990, 'Local', 'Umbro', 100, 2, '#1B458F', '#FFFFFF', 'solid'),
-  k('Rangers', 1996, 'Local', 'Nike', 130, 2, '#0038A8', '#FFFFFF', 'solid'),
+  k('Rangers', 1996, 'Local', 'Adidas', 130, 2, '#0038A8', '#FFFFFF', 'solid'),   // KA: Adidas en 96-97
 
   // ===== CLUBES · ITALIA (27) =====
   k('AC Milan', 1994, 'Local', 'Lotto', 200, 3, '#D01012', '#111111', 'stripes'),
