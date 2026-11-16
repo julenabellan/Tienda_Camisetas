@@ -693,16 +693,27 @@
   }
 
   // ---------- Render ----------
+  // Actualiza un número de la cabecera y lo "marca" con una animación solo si cambia
+  function setStat(sel, value) {
+    const el = $(sel);
+    const v = String(value);
+    if (el.textContent === v) return;
+    el.textContent = v;
+    if (el.dataset.ready) { el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick'); }
+    el.dataset.ready = '1';
+  }
+
   function renderHeader(f = fame()) {
-    $('#st-day').textContent = S.day;
-    $('#st-money').textContent = fmt(S.money);
-    $('#st-rep').textContent = S.rep;
-    $('#st-level').textContent = level();
-    $('#st-fame').textContent = f.score;
+    setStat('#st-day', S.day);
+    setStat('#st-money', fmt(S.money));
+    setStat('#st-rep', S.rep);
+    setStat('#st-level', level());
+    setStat('#st-fame', f.score);
     $('#st-fame').parentElement.title = FAME_TIERS[f.tier].name;
     const nw = netWorth();
     $('#goal-fill').style.width = clamp(nw / GOAL * 100, 0, 100) + '%';
     $('#goal-text').textContent = `Patrimonio ${fmt(nw)} / ${fmt(GOAL)}`;
+    $('#goal-pct').textContent = Math.round(clamp(nw / GOAL * 100, 0, 100)) + ' %';
   }
 
   const MSORTS = [['ganga', 'Mejores gangas'], ['price', 'Más baratas'], ['rare', 'Más raras'], ['need', 'Talla que me falta']];
@@ -722,6 +733,7 @@
       ? offers.map(marketCard).join('')
       : '<p class="empty">No quedan ofertas hoy. Pulsa «Buscar más».</p>';
     $('#btn-refresh').textContent = `Buscar más (${fmt(REFRESH_COST)})`;
+    $('#market-sub').textContent = `${offers.length} ${offers.length === 1 ? 'oferta' : 'ofertas'} disponibles hoy`;
   }
 
   function fameBarHTML(f) {

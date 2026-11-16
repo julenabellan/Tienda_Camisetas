@@ -11,17 +11,21 @@
 </head>
 <body>
   <header class="top">
-    <div class="brand">Retro Kit Shop</div>
-    <div class="stats">
-      <div><small>📅 Día</small><b id="st-day">1</b></div>
-      <div><small>💶 Caja</small><b id="st-money">0 €</b></div>
-      <div><small>⭐ Reputación</small><b id="st-rep">0</b></div>
-      <div><small>👁️ Ojo</small><b id="st-level">1</b></div>
-      <div><small>🏛️ Fama</small><b id="st-fame">0</b></div>
-    </div>
-    <div class="goal" aria-label="Progreso hacia el objetivo">
-      <div class="goal-bar"><div id="goal-fill"></div></div>
-      <span id="goal-text"></span>
+    <div class="top-inner">
+      <div class="brand-row">
+        <div class="brand"><span class="brand-ball" aria-hidden="true">⚽</span>Retro Kit Shop</div>
+        <div class="goal" aria-label="Progreso hacia el objetivo">
+          <div class="goal-top"><span id="goal-text"></span><b id="goal-pct">0 %</b></div>
+          <div class="goal-bar"><div id="goal-fill"></div></div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat s-day"><i aria-hidden="true">📅</i><small>Día</small><b id="st-day">1</b></div>
+        <div class="stat s-money"><i aria-hidden="true">💶</i><small>Caja</small><b id="st-money">0 €</b></div>
+        <div class="stat s-rep"><i aria-hidden="true">⭐</i><small>Reputación</small><b id="st-rep">0</b></div>
+        <div class="stat s-eye"><i aria-hidden="true">👁️</i><small>Ojo</small><b id="st-level">1</b></div>
+        <div class="stat s-fame"><i aria-hidden="true">🏛️</i><small>Fama</small><b id="st-fame">0</b></div>
+      </div>
     </div>
   </header>
 
@@ -34,7 +38,10 @@
   <main>
     <section id="tab-market" class="tab active">
       <div class="section-head">
-        <h2>🛒 Ofertas de hoy</h2>
+        <div>
+          <h2>🛒 Ofertas de hoy</h2>
+          <p id="market-sub" class="sub"></p>
+        </div>
         <button id="btn-refresh" class="btn">Buscar más</button>
       </div>
       <div id="market-tools" class="tools"></div>
