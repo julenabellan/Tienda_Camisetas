@@ -303,6 +303,13 @@
       });
       spot.cx = bestX; spot.bg = kit.c2;
       spot.w = STRIPE_LOGO; spot.h = STRIPE_LOGO; spot.k = STRIPE_LOGO / LOGO_W;
+    } else if (kit.pattern === 'sash') {
+      // banda diagonal c2 de (58,24) a (150,172): el logo cae encima de ella, así que se centra en su eje,
+      // se encoge para que no se salga por los bordes y se tiñe contrastando con la banda (no con el fondo base)
+      const SASH_K = 0.76;
+      spot.cx = 58 + 92 * (spot.cy - 24) / 148;
+      spot.bg = kit.c2;
+      spot.k = SASH_K; spot.w = LOGO_W * SASH_K; spot.h = LOGO_H * SASH_K;
     } else if (kit.pattern === 'hoops') {
       // franjas c2: y = 24 + 26n (13 de alto); franjas c1 entre medias
       let best = null;
@@ -354,6 +361,8 @@
     switch (kit.pattern) {
       case 'stripes':
         stripeRects().forEach(([x, w]) => { pat += `<rect x="${x}" y="0" width="${w}" height="200" fill="${c2}"/>`; });
+        // en las de Adidas, las mangas van lisas (color base) para que las 3 rayas de la marca, de color contrastado, se vean limpias
+        if (kit.brand === 'Adidas') pat += `<rect x="0" y="0" width="52" height="100" fill="${c1}"/><rect x="148" y="0" width="52" height="100" fill="${c1}"/>`;
         break;
       case 'hoops':
         for (let y = 24; y < 190; y += 26) pat += `<rect x="0" y="${y}" width="200" height="13" fill="${c2}"/>`;
