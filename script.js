@@ -249,7 +249,7 @@
   function brandLogoSrc(kit) {
     const y = kit.year;
     switch (kit.brand) {
-      case 'Adidas': return 'Logos/' + (y < 1990 ? 'Adidas2' : y <= 2023 ? 'Adidas' : 'Adidas3') + '.png';
+      case 'Adidas': return 'Logos/' + (y < 1990 ? 'Adidas2' : y <= 2023 ? 'Adidas3' : 'Adidas') + '.png';
       case 'Nike': return 'Logos/' + (y < 1990 ? 'Nike2' : 'Nike') + '.png';
       case 'Puma': return 'Logos/Puma.png';
       case 'Umbro': return 'Logos/Umbro.png';
@@ -261,23 +261,52 @@
 
   // Bajada del logo en el pecho (unidades del dibujo; súbelo o bájalo a tu gusto)
   const LOGO_DY = 4;
+  // Tamaño del logo (ancho x alto)
+  const LOGO_W = 28, LOGO_H = 19.5;
+
+  // Sitio del logo: centro y color del fondo sobre el que queda.
+  // Por defecto, pecho derecho; con rayas se centra en una franja (la más cercana) para no quedar entre dos rayas.
+  function logoSpot(kit) {
+    const spot = { cx: 81, cy: 58 + LOGO_DY, bg: kit.c1 };
+    if (kit.pattern === 'stripes') {
+      // franjas c2: x = 4 + 26n (13 de ancho); franjas c1 entre medias
+      let best = null;
+      for (let x = 4 - 26; x < 200; x += 13) {
+        const cx = x + 6.5, isC2 = ((x - 4) / 13) % 2 === 0;
+        if (!best || Math.abs(cx - 81) < Math.abs(best.cx - 81)) best = { cx, bg: isC2 ? kit.c2 : kit.c1 };
+      }
+      spot.cx = best.cx; spot.bg = best.bg;
+    } else if (kit.pattern === 'hoops') {
+      // franjas c2: y = 24 + 26n (13 de alto); franjas c1 entre medias
+      let best = null;
+      for (let y = 24 - 26; y < 190; y += 13) {
+        const cy = y + 6.5, isC2 = ((y - 24) / 13) % 2 === 0;
+        if (!best || Math.abs(cy - spot.cy) < Math.abs(best.cy - spot.cy)) best = { cy, bg: isC2 ? kit.c2 : kit.c1 };
+      }
+      spot.cy = best.cy; spot.bg = best.bg;
+    }
+    return spot;
+  }
 
   // Logo de la marca en el pecho (lado derecho del jugador)
   function brandLogo(kit, id) {
-    const drawn = brandLogoDrawn(kit);
+    const spot = logoSpot(kit);
+    const other = spot.bg === kit.c1 ? kit.c2 : kit.c1;
+    const ink = inkOn(spot.bg, other);
+    const drawn = brandLogoDrawn(kit, ink);
     const src = brandLogoSrc(kit);
-    if (!src) return `<g transform="translate(0 ${LOGO_DY})">${drawn}</g>`;
-    const ink = inkOn(kit.c1, kit.c2);
-    // si el PNG no carga, se muestra el dibujo de siempre
-    return `<g><g style="display:none" transform="translate(0 ${LOGO_DY})">${drawn}</g>` +
+    const move = `translate(${spot.cx - 81} ${spot.cy - 58})`;
+    if (!src) return `<g transform="${move}">${drawn}</g>`;
+    // si el PNG no carga, se muestra el dibujo de siempre (y se avisa en la consola con el nombre del archivo)
+    return `<g><g style="display:none" transform="${move}">${drawn}</g>` +
       `<filter id="${id}b" color-interpolation-filters="sRGB"><feFlood flood-color="${ink}"/><feComposite in2="SourceAlpha" operator="in"/></filter>` +
-      `<image href="${src}" x="68" y="${49 + LOGO_DY}" width="26" height="18" preserveAspectRatio="xMidYMid meet" filter="url(#${id}b)" ` +
-      `onerror="this.parentNode.firstElementChild.style.display='';this.remove()"/></g>`;
+      `<image href="${src}" x="${spot.cx - LOGO_W / 2}" y="${spot.cy - LOGO_H / 2}" width="${LOGO_W}" height="${LOGO_H}" preserveAspectRatio="xMidYMid meet" filter="url(#${id}b)" ` +
+      `onerror="console.warn('Logo no encontrado:','${src}');this.parentNode.firstElementChild.style.display='';this.remove()"/></g>`;
   }
 
   // Logo dibujado a mano (se usa si la marca no tiene PNG o si el PNG falla)
-  function brandLogoDrawn(kit) {
-    const ink = inkOn(kit.c1, kit.c2);
+  function brandLogoDrawn(kit, inkOverride) {
+    const ink = inkOverride || inkOn(kit.c1, kit.c2);
     switch (kit.brand) {
       case 'Adidas': return `<path d="M72 64 L75 60 M76 64 L80 57 M80.5 64 L85.5 54" stroke="${ink}" stroke-width="2.2" stroke-linecap="round"/>`;
       case 'Nike': return `<path d="M71 59 C75 65 82 64 90 56 C83 60 77 61 71 59 Z" fill="${ink}"/>`;
