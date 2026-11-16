@@ -113,7 +113,7 @@ const KITS = [
   k('Uruguay', 1990, 'Local', 'Umbro', 120, 2, '#6CB4E4', '#111111', 'solid', true),
 
   // ===== CLUBES · ESPAÑA (73) =====
-  k('Alavés', 2001, 'Local', 'Kelme', 150, 3, '#FFFFFF', '#005BAC', 'stripes'),
+  k('Alavés', 2001, 'Local', 'Luanvi', 150, 3, '#FFFFFF', '#005BAC', 'stripes'),
 
   k('Athletic Club', 1994, 'Local', 'Kappa', 160, 3, '#FFFFFF', '#D2122E', 'stripes'),
   k('Athletic Club', 1996, 'Local', 'Kappa', 150, 3, '#D2122E', '#FFFFFF', 'stripes'),
@@ -144,12 +144,12 @@ const KITS = [
 
   k('Cádiz', 2005, 'Local', 'Luanvi', 120, 2, '#F7E017', '#0047AB', 'solid'),
 
-  k('Celta de Vigo', 1998, 'Local', 'Adidas', 160, 3, '#9FD9F6', '#FFFFFF', 'solid'),
-  k('Celta de Vigo', 2001, 'Local', 'Adidas', 140, 2, '#9FD9F6', '#FFFFFF', 'solid'),
+  k('Celta de Vigo', 1998, 'Local', 'Umbro', 160, 3, '#9FD9F6', '#FFFFFF', 'solid'),
+  k('Celta de Vigo', 2001, 'Local', 'Umbro', 140, 2, '#9FD9F6', '#FFFFFF', 'solid'),
 
   k('Córdoba', 2002, 'Local', 'Joma', 120, 2, '#FFFFFF', '#00843D', 'stripes'),
 
-  k('Deportivo', 2000, 'Local', 'Lotto', 110, 2, '#1257A8', '#FFFFFF', 'stripes'),
+  k('Deportivo', 2000, 'Local', 'Adidas', 110, 2, '#1257A8', '#FFFFFF', 'stripes'),   // KA: Adidas
 
   k('Elche', 2000, 'Local', 'Kelme', 140, 2, '#FFFFFF', '#00843D', 'band'),
 
@@ -160,11 +160,11 @@ const KITS = [
 
   k('Las Palmas', 1998, 'Local', 'Meyba', 150, 3, '#FFD100', '#005BAC', 'solid'),
 
-  k('Málaga', 1999, 'Local', 'Lotto', 140, 2, '#FFFFFF', '#6CB4E4', 'stripes'),
+  k('Málaga', 1999, 'Local', 'Kelme', 140, 2, '#FFFFFF', '#6CB4E4', 'stripes'),   // KA: Kelme
 
-  k('Mallorca', 1998, 'Local', 'Joma', 150, 3, '#D2122E', '#111111', 'solid'),
+  k('Mallorca', 1998, 'Local', 'Kelme', 150, 3, '#D2122E', '#111111', 'stripes'),   // KA: Stripes, Red / Black, Kelme
 
-  k('Numancia', 2008, 'Local', 'Joma', 110, 2, '#D4001B', '#003DA5', 'solid'),
+  k('Numancia', 2008, 'Local', 'Errea', 110, 2, '#D4001B', '#FFFFFF', 'graphic'),   // KA: Graphic, Red / White, Errea
 
   k('Rayo Vallecano', 1997, 'Local', 'Kelme', 170, 3, '#FFFFFF', '#D4001B', 'sash'),
 
@@ -211,7 +211,7 @@ const KITS = [
   k('Valencia', 1999, 'Local', 'Kappa', 110, 2, '#FFFFFF', '#111111', 'solid'),
   k('Valencia', 2001, 'Local', 'Nike', 130, 2, '#FFFFFF', '#111111', 'solid'),
 
-  k('Villarreal', 1999, 'Local', 'Joma', 160, 3, '#F7E017', '#111111', 'solid'),
+  k('Villarreal', 1999, 'Local', 'Kelme', 160, 3, '#F7E017', '#111111', 'solid'),   // KA: Kelme
 
   // ===== CLUBES · INGLATERRA (31) =====
   k('Arsenal', 1991, 'Visitante', 'Adidas', 190, 3, '#F5D000', '#0B2A6B', 'graphic', false, '#6B4AA8'),
@@ -296,7 +296,7 @@ const KITS = [
   k('Parma', 1999, 'Local', 'Champion', 150, 3, '#FFFFFF', '#FDE100', 'cross', false, '#003DA5'),
   k('Parma', 2002, 'Local', 'Champion', 120, 2, '#FFFFFF', '#111111', 'cross'),
 
-  k('Roma', 1994, 'Local', 'Umbro', 150, 3, '#8E1F2F', '#F0BC42', 'solid'),
+  k('Roma', 1994, 'Local', 'Asics', 150, 3, '#8E1F2F', '#F0BC42', 'solid'),
   k('Roma', 2001, 'Local', 'Kappa', 220, 4, '#8E1F2F', '#F0BC42', 'solid'),
 
   k('Sampdoria', 1991, 'Local', 'Lotto', 170, 3, '#004B93', '#F4F4F4', 'band'),
