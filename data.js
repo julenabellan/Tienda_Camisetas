@@ -132,6 +132,220 @@ const KITS = [
   k('Real Madrid', 1999, 'Visitante', 'Adidas', 130, 2, '#1B2A6B', '#F5C400', 'solid'),
   k('Atlético de Madrid', 1999, 'Local', 'Nike', 120, 2, '#CB3524', '#FFFFFF', 'stripes'),
   k('Real Zaragoza', 1995, 'Local', 'Reebok', 150, 3, '#FFFFFF', '#1B458F', 'yoke'),
+  // ===== BLOQUE 1 (25 camisetas nuevas) =====
+
+k('Barcelona', 2006, 'Local', 'Nike', 120, 2, '#A50044', '#004D98', 'stripes'),
+k('Barcelona', 2007, 'Local', 'Nike', 115, 2, '#A50044', '#004D98', 'stripes'),
+k('Barcelona', 2008, 'Local', 'Nike', 125, 2, '#A50044', '#004D98', 'stripes'),
+
+k('Manchester United', 1994, 'Local', 'Umbro', 170, 3, '#DA291C', '#FFFFFF', 'solid'),
+k('Manchester United', 1997, 'Visitante', 'Umbro', 180, 3, '#FFFFFF', '#1A1A1A', 'graphic'),
+
+k('Juventus', 2001, 'Visitante', 'Lotto', 135, 2, '#001F5B', '#FFD700', 'solid'),
+k('Juventus', 2009, 'Local', 'Nike', 95, 1, '#FFFFFF', '#111111', 'stripes'),
+
+k('Inter', 1996, 'Tercera', 'Umbro', 180, 3, '#FFD400', '#003A70', 'graphic'),
+k('Inter', 2003, 'Local', 'Nike', 110, 2, '#0057A8', '#111111', 'stripes'),
+k('Inter', 2005, 'Local', 'Nike', 100, 2, '#0057A8', '#111111', 'stripes'),
+
+k('AC Milan', 2006, 'Local', 'Adidas', 120, 2, '#D01012', '#111111', 'stripes'),
+
+k('Chelsea', 2010, 'Local', 'Adidas', 90, 1, '#034694', '#FFFFFF', 'solid'),
+
+k('Arsenal', 2003, 'Local', 'Nike', 115, 2, '#C8102E', '#FFFFFF', 'solid'),
+k('Arsenal', 2012, 'Local', 'Nike', 80, 1, '#C8102E', '#FFFFFF', 'solid'),
+
+k('Tottenham', 1999, 'Local', 'Adidas', 120, 2, '#FFFFFF', '#132257', 'solid'),
+k('Tottenham', 2010, 'Visitante', 'Puma', 90, 1, '#6EC6FF', '#132257', 'solid'),
+
+k('Roma', 1994, 'Local', 'Umbro', 150, 3, '#8E1F2F', '#F0BC42', 'solid'),
+
+k('River Plate', 2002, 'Local', 'Adidas', 95, 1, '#FFFFFF', '#D4001B', 'sash'),
+
+k('Corinthians', 2002, 'Local', 'Topper', 110, 2, '#FFFFFF', '#111111', 'solid'),
+
+k('Athletic Club', 1994, 'Local', 'Kappa', 160, 3, '#FFFFFF', '#D2122E', 'stripes'),
+
+k('Sevilla', 2015, 'Portero', 'New Balance', 75, 1, '#2E7D32', '#111111', 'solid'),
+
+k('España', 2011, 'Local', 'Adidas', 100, 2, '#C8102E', '#F5C400', 'solid', true),
+
+k('Argentina', 2010, 'Visitante', 'Adidas', 95, 1, '#1F4FA3', '#FFFFFF', 'solid', true),
+
+k('Francia', 2018, 'Visitante', 'Nike', 100, 2, '#FFFFFF', '#1E3A8A', 'graphic', true),
+
+k('Países Bajos', 2013, 'Visitante', 'Nike', 95, 1, '#003DA5', '#FF6A13', 'solid', true),
+  // ===== BLOQUE 2 (25 camisetas nuevas) =====
+
+k('Bayern Múnich', 1997, 'Local', 'Adidas', 190, 3, '#0B2A6B', '#DC052D', 'band'),
+k('Bayern Múnich', 1999, 'Local', 'Adidas', 170, 3, '#DC052D', '#0B2A6B', 'sleeves'),
+k('Bayern Múnich', 2005, 'Local', 'Adidas', 100, 2, '#DC052D', '#FFFFFF', 'solid'),
+
+k('Borussia Dortmund', 1995, 'Local', 'Nike', 220, 4, '#FDE100', '#111111', 'solid'),
+k('Borussia Dortmund', 2001, 'Local', 'Nike', 120, 2, '#FDE100', '#111111', 'solid'),
+
+k('Hamburgo', 1994, 'Local', 'Adidas', 150, 3, '#FFFFFF', '#003399', 'solid'),
+k('Werder Bremen', 2004, 'Local', 'Kappa', 110, 2, '#00853F', '#FFFFFF', 'solid'),
+
+k('PSV Eindhoven', 1998, 'Local', 'Nike', 170, 3, '#FFFFFF', '#D4001B', 'stripes'),
+k('PSV Eindhoven', 2004, 'Local', 'Nike', 110, 2, '#FFFFFF', '#D4001B', 'stripes'),
+
+k('Feyenoord', 1999, 'Local', 'Adidas', 150, 3, '#D2122E', '#FFFFFF', 'halves'),
+
+k('Ajax', 1998, 'Visitante', 'Umbro', 170, 3, '#1E3A8A', '#E53935', 'graphic'),
+
+k('Benfica', 1998, 'Local', 'Adidas', 140, 2, '#D4001B', '#FFFFFF', 'solid'),
+k('Sporting CP', 2001, 'Local', 'Reebok', 130, 2, '#00843D', '#FFFFFF', 'hoops'),
+
+k('Oporto', 2003, 'Local', 'Nike', 120, 2, '#FFFFFF', '#0046AD', 'stripes'),
+
+k('Parma', 1998, 'Local', 'Lotto', 180, 3, '#FFFFFF', '#111111', 'cross'),
+k('Parma', 2002, 'Local', 'Champion', 120, 2, '#FFFFFF', '#111111', 'cross'),
+
+k('Lazio', 1998, 'Local', 'Puma', 170, 3, '#87D8F7', '#FFFFFF', 'solid'),
+
+k('Napoli', 1996, 'Local', 'Lotto', 190, 3, '#6CB4E4', '#FFFFFF', 'solid'),
+
+k('Sampdoria', 1998, 'Local', 'Asics', 160, 3, '#004B93', '#FFFFFF', 'band'),
+
+k('Fiorentina', 1998, 'Local', 'Fila', 170, 3, '#5B2C83', '#FFFFFF', 'solid'),
+
+k('Leeds United', 2001, 'Local', 'Nike', 120, 2, '#FFFFFF', '#1B458F', 'solid'),
+
+k('Newcastle United', 1997, 'Local', 'Adidas', 180, 3, '#FFFFFF', '#111111', 'stripes'),
+
+k('Celtic', 2003, 'Local', 'Umbro', 110, 2, '#00843D', '#FFFFFF', 'hoops'),
+
+k('Rangers', 1996, 'Local', 'Nike', 130, 2, '#0038A8', '#FFFFFF', 'solid'),
+
+k('Galatasaray', 2000, 'Local', 'Adidas', 140, 2, '#F7A600', '#A00028', 'halves'),
+  // ===== BLOQUE 3 - Liga Española y Segunda División (25 camisetas) =====
+
+k('Sevilla', 1996, 'Local', 'Marathon', 170, 3, '#FFFFFF', '#D4001B', 'solid'),
+k('Sevilla', 1998, 'Local', 'Adidas', 150, 3, '#FFFFFF', '#D4001B', 'solid'),
+
+k('Valencia', 1997, 'Local', 'Luanvi', 170, 3, '#FFFFFF', '#111111', 'solid'),
+k('Valencia', 2001, 'Local', 'Nike', 130, 2, '#FFFFFF', '#111111', 'solid'),
+
+k('Real Sociedad', 1998, 'Local', 'Astore', 170, 3, '#FFFFFF', '#005BAC', 'stripes'),
+k('Real Sociedad', 2003, 'Local', 'Astore', 120, 2, '#FFFFFF', '#005BAC', 'stripes'),
+
+k('Espanyol', 1995, 'Local', 'Kelme', 170, 3, '#FFFFFF', '#005BAC', 'stripes'),
+k('Espanyol', 1999, 'Local', 'Puma', 140, 2, '#FFFFFF', '#005BAC', 'stripes'),
+
+k('Celta de Vigo', 1998, 'Local', 'Adidas', 160, 3, '#9FD9F6', '#FFFFFF', 'solid'),
+k('Celta de Vigo', 2001, 'Local', 'Adidas', 140, 2, '#9FD9F6', '#FFFFFF', 'solid'),
+
+k('Mallorca', 1998, 'Local', 'Joma', 150, 3, '#D2122E', '#111111', 'solid'),
+
+k('Villarreal', 1999, 'Local', 'Joma', 160, 3, '#F7E017', '#111111', 'solid'),
+
+k('Alavés', 2001, 'Local', 'Kelme', 150, 3, '#FFFFFF', '#005BAC', 'stripes'),
+
+k('Rayo Vallecano', 1997, 'Local', 'Kelme', 170, 3, '#FFFFFF', '#D4001B', 'sash'),
+
+k('Sporting de Gijón', 2002, 'Local', 'Astore', 130, 2, '#FFFFFF', '#D2122E', 'stripes'),
+
+k('Real Oviedo', 1997, 'Local', 'Adidas', 150, 3, '#003DA5', '#FFFFFF', 'solid'),
+
+k('Tenerife', 1999, 'Local', 'Puma', 140, 2, '#FFFFFF', '#005BAC', 'solid'),
+
+k('Las Palmas', 1998, 'Local', 'Meyba', 150, 3, '#FFD100', '#005BAC', 'solid'),
+
+k('Málaga', 1999, 'Local', 'Lotto', 140, 2, '#FFFFFF', '#6CB4E4', 'stripes'),
+
+k('Cádiz', 2005, 'Local', 'Luanvi', 120, 2, '#F7E017', '#0047AB', 'solid'),
+
+k('Elche', 2000, 'Local', 'Kelme', 140, 2, '#FFFFFF', '#00843D', 'band'),
+
+k('Hércules', 2006, 'Local', 'Joma', 120, 2, '#FFFFFF', '#005BAC', 'stripes'),
+
+k('Recreativo de Huelva', 2005, 'Local', 'Puma', 130, 2, '#FFFFFF', '#4FA3FF', 'stripes'),
+
+k('Numancia', 2008, 'Local', 'Joma', 110, 2, '#D4001B', '#003DA5', 'solid'),
+
+k('Córdoba', 2002, 'Local', 'Joma', 120, 2, '#FFFFFF', '#00843D', 'stripes'),
+  // ===== BLOQUE ESPECIAL - FC Barcelona & Real Madrid =====
+
+// ===== FC BARCELONA =====
+k('Barcelona', 2000, 'Visitante', 'Nike', 150, 3, '#F5C400', '#004D98', 'solid'),
+k('Barcelona', 2001, 'Visitante', 'Nike', 145, 3, '#111111', '#A50044', 'band'),
+k('Barcelona', 2002, 'Tercera', 'Nike', 155, 3, '#001F5B', '#A50044', 'solid'),
+k('Barcelona', 2003, 'Visitante', 'Nike', 150, 3, '#F5C400', '#A50044', 'solid'),
+k('Barcelona', 2004, 'Visitante', 'Nike', 145, 3, '#6A1B9A', '#A50044', 'solid'),
+k('Barcelona', 2005, 'Visitante', 'Nike', 150, 3, '#C96A00', '#A50044', 'solid'),
+k('Barcelona', 2006, 'Visitante', 'Nike', 165, 3, '#F7D117', '#004D98', 'solid'),
+k('Barcelona', 2008, 'Tercera', 'Nike', 170, 3, '#7F0000', '#F5C400', 'solid'),
+k('Barcelona', 2009, 'Visitante', 'Nike', 170, 3, '#F7E017', '#004D98', 'solid'),
+k('Barcelona', 2010, 'Visitante', 'Nike', 160, 3, '#66CC66', '#004D98', 'solid'),
+k('Barcelona', 2012, 'Visitante', 'Nike', 150, 2, '#FF6A00', '#A50044', 'graphic'),
+k('Barcelona', 2014, 'Tercera', 'Nike', 145, 2, '#7A0019', '#F5C400', 'solid'),
+
+ // ===== REAL MADRID =====
+k('Real Madrid', 1995, 'Visitante', 'Kelme', 170, 3, '#6A1B9A', '#FFFFFF', 'solid'),
+k('Real Madrid', 1997, 'Visitante', 'Kelme', 180, 3, '#2C2C54', '#FFD700', 'solid'),
+k('Real Madrid', 1998, 'Visitante', 'Adidas', 175, 3, '#001F5B', '#F5C400', 'solid'),
+k('Real Madrid', 2000, 'Tercera', 'Adidas', 180, 3, '#111111', '#C0C0C0', 'solid'),
+k('Real Madrid', 2001, 'Centenario', 'Adidas', 320, 4, '#FFFFFF', '#D4AF37', 'solid'),
+k('Real Madrid', 2002, 'Visitante', 'Adidas', 180, 3, '#111111', '#FFFFFF', 'solid'),
+k('Real Madrid', 2003, 'Tercera', 'Adidas', 170, 3, '#001F5B', '#C0C0C0', 'solid'),
+k('Real Madrid', 2004, 'Visitante', 'Adidas', 160, 3, '#001F5B', '#FFD700', 'solid'),
+k('Real Madrid', 2006, 'Visitante', 'Adidas', 160, 3, '#2B2B2B', '#FFFFFF', 'solid'),
+k('Real Madrid', 2008, 'Visitante', 'Adidas', 150, 2, '#3B0066', '#FFFFFF', 'solid'),
+k('Real Madrid', 2011, 'Visitante', 'Adidas', 175, 3, '#C8102E', '#FFFFFF', 'solid'),
+k('Real Madrid', 2014, 'Tercera', 'Adidas', 190, 3, '#111111', '#00E5FF', 'solid'),
+k('Real Madrid', 2017, 'Tercera', 'Adidas', 190, 3, '#7FD321', '#111111', 'solid'),
+  // ===== TOP 25 Football Kit Archive =====
+
+k('Arsenal', 2003, 'Local', 'Nike', 240, 4, '#C8102E', '#FFFFFF', 'solid'),
+
+k('AC Milan', 2006, 'Local', 'Adidas', 260, 4, '#D01012', '#111111', 'stripes'),
+
+k('Real Madrid', 1999, 'Local', 'Adidas', 250, 4, '#FFFFFF', '#1B2A6B', 'solid'),
+
+k('Real Madrid', 2011, 'Local', 'Adidas', 240, 4, '#FFFFFF', '#FFD700', 'solid'),
+
+k('Real Madrid', 1999, 'Visitante', 'Adidas', 230, 4, '#1B2A6B', '#F5C400', 'solid'),
+
+k('Real Madrid', 2011, 'Visitante', 'Adidas', 220, 4, '#C8102E', '#FFFFFF', 'solid'),
+
+k('Barcelona', 2008, 'Local', 'Nike', 250, 4, '#A50044', '#004D98', 'stripes'),
+
+k('Barcelona', 2010, 'Local', 'Nike', 280, 4, '#A50044', '#004D98', 'stripes'),
+
+k('Barcelona', 1999, 'Local', 'Nike', 245, 4, '#A50044', '#004D98', 'stripes'),
+
+k('Colombia', 1990, 'Local', 'Adidas', 280, 4, '#FCD116', '#003893', 'solid', true),
+
+k('Alemania', 2006, 'Local', 'Adidas', 240, 4, '#FFFFFF', '#111111', 'graphic', true),
+
+k('Brasil', 1998, 'Local', 'Nike', 230, 4, '#FFD500', '#0A8F3C', 'solid', true),
+
+k('Argentina', 2022, 'Local', 'Adidas', 200, 3, '#FFFFFF', '#75AADB', 'stripes', true),
+
+k('Italia', 2006, 'Local', 'Puma', 220, 4, '#0057B8', '#FFFFFF', 'solid', true),
+
+k('Portugal', 2004, 'Local', 'Nike', 190, 3, '#C8102E', '#006600', 'solid', true),
+
+k('Países Bajos', 2004, 'Local', 'Nike', 190, 3, '#FF6A13', '#FFFFFF', 'solid', true),
+
+k('Chelsea', 2005, 'Local', 'Umbro', 210, 3, '#034694', '#FFFFFF', 'solid'),
+
+k('Liverpool', 2005, 'Local', 'Reebok', 210, 3, '#C8102E', '#FFFFFF', 'solid'),
+
+k('Manchester United', 2007, 'Local', 'Nike', 220, 3, '#DA291C', '#FFFFFF', 'solid'),
+
+k('Manchester United', 2008, 'Local', 'Nike', 230, 4, '#DA291C', '#FFFFFF', 'solid'),
+
+k('Inter', 2010, 'Local', 'Nike', 220, 4, '#0057A8', '#111111', 'stripes'),
+
+k('Bayern Múnich', 2013, 'Local', 'Adidas', 220, 4, '#DC052D', '#FFFFFF', 'solid'),
+
+k('Borussia Dortmund', 1996, 'Local', 'Nike', 230, 4, '#FDE100', '#111111', 'solid'),
+
+k('Roma', 2001, 'Local', 'Kappa', 220, 4, '#8E1F2F', '#F0BC42', 'solid'),
+
+k('Napoli', 1987, 'Local', 'Ennerre', 320, 4, '#6CB4E4', '#FFFFFF', 'solid'),
 ];
 
 const KIT_BY_ID = Object.fromEntries(KITS.map(x => [x.id, x]));
