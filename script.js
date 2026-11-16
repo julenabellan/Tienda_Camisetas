@@ -266,22 +266,24 @@
 
   // Rayas verticales: ancho de la raya, separación entre el inicio de una y la siguiente, y posición de la primera
   // (hueco de color base centrado en la camiseta; separación mayor = más sitio para el logo)
-  const STRIPE_W = 13, STRIPE_STEP = 32;
-  const STRIPE_X0 = 100 - STRIPE_STEP / 2 - STRIPE_W / 2 - STRIPE_STEP * 3; // = -18.5 → hueco de color base justo en el centro (x=100)
+  const STRIPE_W = 18, STRIPE_STEP = 32;
+  // Tamaño del logo cuando va sobre una raya: siempre más pequeño que la raya (margen a cada lado)
+  const STRIPE_LOGO = STRIPE_W - 3;
+  const STRIPE_X0 = 100 - STRIPE_STEP / 2 - STRIPE_W / 2 - STRIPE_STEP * 3; // → hueco de color base justo en el centro (x=100)
 
   // Sitio del logo: centro y color del fondo sobre el que queda.
-  // Por defecto, pecho derecho; con rayas se centra en una franja (la más cercana) para no quedar entre dos rayas.
+  // Por defecto, pecho derecho; con rayas se centra dentro de una raya (la más cercana), más ancha que el logo.
   function logoSpot(kit) {
-    const spot = { cx: 81, cy: 58 + LOGO_DY, bg: kit.c1 };
+    const spot = { cx: 81, cy: 58 + LOGO_DY, bg: kit.c1, w: LOGO_W, h: LOGO_H, k: 1 };
     if (kit.pattern === 'stripes') {
-      // franjas c2 de ancho STRIPE_W cada STRIPE_STEP; franjas c1 entre medias
-      let best = null;
+      // el logo va siempre centrado DENTRO de una raya c2 (la más cercana al pecho) y encogido para que quepa
+      let bestX = null;
       for (let x = STRIPE_X0 - STRIPE_STEP; x < 200; x += STRIPE_STEP) {
-        [[x + STRIPE_W / 2, kit.c2], [x + STRIPE_W + (STRIPE_STEP - STRIPE_W) / 2, kit.c1]].forEach(([cx, bg]) => {
-          if (!best || Math.abs(cx - 81) < Math.abs(best.cx - 81)) best = { cx, bg };
-        });
+        const cx = x + STRIPE_W / 2;
+        if (bestX === null || Math.abs(cx - 81) < Math.abs(bestX - 81)) bestX = cx;
       }
-      spot.cx = best.cx; spot.bg = best.bg;
+      spot.cx = bestX; spot.bg = kit.c2;
+      spot.w = STRIPE_LOGO; spot.h = STRIPE_LOGO; spot.k = STRIPE_LOGO / LOGO_W;
     } else if (kit.pattern === 'hoops') {
       // franjas c2: y = 24 + 26n (13 de alto); franjas c1 entre medias
       let best = null;
@@ -301,12 +303,12 @@
     const ink = inkOn(spot.bg, other);
     const drawn = brandLogoDrawn(kit, ink);
     const src = brandLogoSrc(kit);
-    const move = `translate(${spot.cx - 81} ${spot.cy - 58})`;
+    const move = `translate(${spot.cx} ${spot.cy}) scale(${spot.k}) translate(-81 -58)`;
     if (!src) return `<g transform="${move}">${drawn}</g>`;
     // si el PNG no carga, se muestra el dibujo de siempre (y se avisa en la consola con el nombre del archivo)
     return `<g><g style="display:none" transform="${move}">${drawn}</g>` +
       `<filter id="${id}b" color-interpolation-filters="sRGB"><feFlood flood-color="${ink}"/><feComposite in2="SourceAlpha" operator="in"/></filter>` +
-      `<image href="${src}" x="${spot.cx - LOGO_W / 2}" y="${spot.cy - LOGO_H / 2}" width="${LOGO_W}" height="${LOGO_H}" preserveAspectRatio="xMidYMid meet" filter="url(#${id}b)" ` +
+      `<image href="${src}" x="${spot.cx - spot.w / 2}" y="${spot.cy - spot.h / 2}" width="${spot.w}" height="${spot.h}" preserveAspectRatio="xMidYMid meet" filter="url(#${id}b)" ` +
       `onerror="console.warn('Logo no encontrado:','${src}');this.parentNode.firstElementChild.style.display='';this.remove()"/></g>`;
   }
 
