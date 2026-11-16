@@ -139,6 +139,7 @@
       ask,
       floor: Math.max(2, Math.round(ask * rand(s.floor[0], s.floor[1]))),
       patience: s.patience + (S.rep >= 40 ? 1 : 0),
+      maxPat: s.patience + (S.rep >= 40 ? 1 : 0),
       used: {},
     };
   }
@@ -292,9 +293,7 @@
         <button class="star${star ? ' on' : ''}" data-action="feature" data-uid="${it.uid}" aria-pressed="${star}" aria-label="Destacar en el escaparate" title="Destacar: los clientes la ven antes">★</button>
         ${itemHead(it)}
         <p class="seller">Pagaste ${fmt(it.paid)} · Margen <b class="${margin >= 0 ? 'pos' : 'neg'}">${margin >= 0 ? '+' : ''}${fmt(margin)}</b> · ${age} d</p>
-        <label class="price-input">Tu precio
-          <input type="number" inputmode="numeric" min="1" step="1" value="${it.listPrice}" data-action="setprice" data-uid="${it.uid}">
-        </label>
+        <button class="price-btn" data-action="editprice" data-uid="${it.uid}"><small>Tu precio</small><b>${fmt(it.listPrice)}</b><span>✎ Cambiar</span></button>
         <div class="actions">
           ${it.verified ? '' : `<button class="btn" data-action="auth" data-uid="${it.uid}">Autenticar (${fmt(AUTH_COST)})</button>`}
           <button class="btn" data-action="suggest" data-uid="${it.uid}">Precio sugerido</button>
@@ -443,15 +442,22 @@
       modal.classList.remove('hidden');
       sheet.onclick = e => {
         const f = e.target.closest('[data-fill]');
-        if (f) { const i = $('#sheet-input', sheet); if (i) i.value = Math.round(Number(f.dataset.fill) * Number(f.dataset.base)); return; }
+        if (f) { editField(sheet, () => Math.round(Number(f.dataset.fill) * Number(f.dataset.base))); return; }
+        const kp = e.target.closest('[data-key]');
+        if (kp) {
+          const k = kp.dataset.key;
+          editField(sheet, v => (k === 'del' ? v.slice(0, -1) : k === 'clr' ? '' : v.length < 5 ? (v + k).replace(/^0+(?=[0-9])/, '') : v));
+          return;
+        }
+        const st = e.target.closest('[data-step]');
+        if (st) { editField(sheet, v => Math.max(0, (Number(v) || 0) + Number(st.dataset.step))); return; }
         const b = e.target.closest('[data-choice]');
         if (!b) return;
         const inp = $('#sheet-input', sheet);
         sheet.onclick = null;
         resolve({ choice: b.dataset.choice, value: inp ? Number(inp.value) : null });
       };
-      const inp = $('#sheet-input', sheet);
-      if (inp) { inp.focus(); inp.select(); }
+      syncTrack(sheet);
     });
   }
 
@@ -492,12 +498,89 @@
     return 'Es una réplica. El vendedor la rebaja a precio de réplica.';
   }
 
+  // ---------- Componentes visuales de negociación ----------
+  const faceFor = r => (r >= 0.67 ? '😊' : r >= 0.34 ? '😐' : '😠');
+  const patDots = (n, max) => Array.from({ length: Math.max(max, n, 0) }, (_, i) => `<i class="pdot${i < n ? ' on' : ''}"></i>`).join('');
+
+  function editField(sheet, fn) {
+    const i = $('#sheet-input', sheet);
+    if (!i) return;
+    i.value = String(fn(String(i.value || '')));
+    syncTrack(sheet);
+  }
+
+  function syncTrack(sheet) {
+    const tr = $('.track', sheet), inp = $('#sheet-input', sheet);
+    if (!tr || !inp) return;
+    const max = Number(tr.dataset.max), v = Number(inp.value) || 0;
+    const pin = $('#pin-you', sheet), lg = $('#lg-you', sheet);
+    if (pin) pin.style.left = clamp(v / max * 100, 0, 100) + '%';
+    if (lg) lg.textContent = fmt(v);
+  }
+
+  function keypadHTML() {
+    const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button class="key" data-key="${n}">${n}</button>`).join('');
+    return `<div class="keypad" role="group" aria-label="Teclado numérico">${keys}
+      <button class="key alt" data-key="clr" aria-label="Borrar todo">C</button>
+      <button class="key" data-key="0">0</button>
+      <button class="key alt" data-key="del" aria-label="Borrar un dígito">⌫</button></div>`;
+  }
+
+  function fieldHTML(label, value) {
+    return `<div class="price-field"><small>${label}</small>
+      <div class="pf-row">
+        <button class="step" data-step="-5" aria-label="Restar 5 euros">−5</button>
+        <div class="pf-box"><input id="sheet-input" readonly inputmode="none" tabindex="-1" aria-label="${label}" value="${value}"><span>€</span></div>
+        <button class="step" data-step="5" aria-label="Sumar 5 euros">+5</button>
+      </div></div>`;
+  }
+
+  // Barra de precios: banda verde = valoración; chinchetas = precios en juego
+  function trackHTML(max, est, pins) {
+    const pct = v => clamp(v / max * 100, 0, 100);
+    const lo = pct(est.low), hi = pct(est.high);
+    return `<div class="track" data-max="${max}"><div class="band" style="left:${lo}%;width:${Math.max(2, hi - lo)}%"></div>
+      ${pins.map(p => `<i class="pin ${p.cls}"${p.id ? ` id="${p.id}"` : ''} style="left:${pct(p.v)}%"></i>`).join('')}</div>
+      <div class="legend"><span class="lg band-lg">Valoración ${fmt(est.low)}–${fmt(est.high)}</span>
+      ${pins.map(p => `<span class="lg ${p.cls}">${p.label} <b${p.id ? ` id="lg-${p.id.slice(4)}"` : ''}>${fmt(p.v)}</b></span>`).join('')}</div>`;
+  }
+
+  function stamp(txt, emoji, cls, sub) {
+    return new Promise(res => {
+      $('#sheet').onclick = null;
+      $('#sheet').innerHTML = `<div class="stamp ${cls || 'ok'}"><span>${emoji}</span><b>${txt}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
+      $('#modal').classList.remove('hidden');
+      setTimeout(() => { closeDialog(); res(); }, 900);
+    });
+  }
+
+  async function editPrice(uid) {
+    const it = S.stock.find(x => x.uid === Number(uid));
+    if (!it || S.busy) return;
+    const est = estimate(it), sug = nice(est.mid * 1.2);
+    const max = Math.max(it.listPrice, est.high, it.paid, sug) * 1.3;
+    const r = await dialog(`<div class="neg">
+      <div class="neg-head"><div class="thumb sm">${kitImage(kitOf(it))}</div>
+        <div><h3>${title(it)} · ${kitOf(it).type}</h3><p class="sub">Talla ${it.size} · ${COND[it.cond].label}</p><p class="est">Valoración: <b>${estimateText(it)}</b></p></div></div>
+      ${trackHTML(max, est, [{ cls: 'cost', label: 'Pagaste', v: it.paid }, { id: 'pin-you', cls: 'you', label: 'Tu precio', v: it.listPrice }])}
+      ${fieldHTML('Tu precio', it.listPrice)}
+      <div class="fchips"><button class="fchip" data-fill="1" data-base="${sug}">Sugerido ${fmt(sug)}</button><button class="fchip" data-fill="1.15" data-base="${it.paid}">Coste +15 %</button><button class="fchip" data-fill="1.3" data-base="${it.paid}">Coste +30 %</button></div>
+      ${keypadHTML()}
+      <div class="actions wrap"><button class="btn primary" data-choice="save">Guardar precio</button><button class="btn ghost" data-choice="cancel">Cancelar</button></div></div>`);
+    closeDialog();
+    if (r.choice === 'save' && r.value > 0) { it.listPrice = Math.round(r.value); save(); renderAll(); }
+  }
+
   function sellerDialogHTML(offer, msg) {
     const it = offer.item;
     const s = SELLERS[offer.seller];
-    const dots = '●'.repeat(Math.max(0, offer.patience)) + '○'.repeat(Math.max(0, s.patience - offer.patience));
+    const maxPat = offer.maxPat || s.patience;
+    const face = faceFor(offer.patience / maxPat);
+    const est = estimate(it);
+    const start = Math.min(offer.ask, offer.last || Math.round(offer.ask * 0.8));
     const used = offer.used || {};
     const quick = [0.5, 0.65, 0.8].map(p => `<button class="fchip" data-fill="${p}" data-base="${offer.ask}">${Math.round(p * 100)} %</button>`).join('');
+    const heat = offer.heat === undefined ? '' : `<div class="thermo" title="Lo cerca que estás del trato"><span>❄️</span><div><i style="left:${Math.round(offer.heat * 100)}%"></i></div><span>🔥</span></div>`;
     return `
       <div class="neg">
         <div class="neg-head">
@@ -505,19 +588,18 @@
           <div>
             <h3>${title(it)} · ${kitOf(it).type}</h3>
             <p class="sub">${COND[it.cond].label} · Talla ${it.size}${sizeCount(it.size) === 0 ? ' · 🧩 te falta' : ''}</p>
-            <p class="est">Valoración: <b>${estimateText(it)}</b></p>
             <div class="chips">${authChip(it)}</div>
           </div>
         </div>
-        <p class="bubble"><span>${s.emoji} ${offer.name}</span>${msg}</p>
-        <div class="neg-row">
-          <div class="price-tag static"><small>Pide</small>${fmt(offer.ask)}</div>
-          <p class="patience" title="Paciencia del vendedor">Paciencia ${dots}</p>
+        <div class="stage">
+          <div class="avatar ${offer.react || ''}"><span class="av">${s.emoji}</span><span class="face">${face}</span><small>${offer.name}</small></div>
+          <p class="bubble ${offer.react || ''}"><span>${s.label}</span>${msg}</p>
         </div>
-        <label class="price-input">Tu oferta
-          <input id="sheet-input" type="number" inputmode="numeric" min="1" step="1" value="${Math.min(offer.ask, Math.round(offer.ask * 0.8))}">
-        </label>
+        <div class="meters"><div class="pat" title="Paciencia del vendedor"><small>Paciencia</small>${patDots(offer.patience, maxPat)}</div>${heat}</div>
+        ${trackHTML(Math.max(offer.ask, est.high) * 1.2, est, [{ cls: 'ask', label: 'Pide', v: offer.ask }, { id: 'pin-you', cls: 'you', label: 'Tu oferta', v: start }])}
+        ${fieldHTML('Tu oferta', start)}
         <div class="fchips">Atajos: ${quick}</div>
+        ${keypadHTML()}
         <div class="actions wrap">
           <button class="btn primary" data-choice="offer">Ofrecer</button>
           <button class="btn" data-choice="accept">Pagar ${fmt(offer.ask)}</button>
@@ -528,7 +610,7 @@
           ${it.verified ? '' : `<button class="btn sm" data-choice="auth">Autenticar (${fmt(AUTH_COST)})</button>`}
           <button class="btn sm ghost" data-choice="leave">Irme</button>
         </div>
-        <p class="hint">Caja: ${fmt(S.money)} · Cada táctica solo se puede usar una vez; si fallan, el vendedor pierde paciencia.</p>
+        <p class="hint">Caja: ${fmt(S.money)} · Las tácticas solo se usan una vez; si fallan, el vendedor pierde paciencia.</p>
       </div>`;
   }
 
@@ -539,10 +621,13 @@
     offer.used = offer.used || {};
     const s = SELLERS[offer.seller];
     let msg = pick(s.lines.greet);
+    const pay = async price => { await stamp('¡Trato!', '🤝', 'ok', '−' + fmt(price)); buyItem(offer, price); };
     while (true) {
-      const r = await dialog(sellerDialogHTML(offer, msg));
+      const html = sellerDialogHTML(offer, msg);
+      offer.react = null;
+      const r = await dialog(html);
       if (r.choice === 'leave') { closeDialog(); return; }
-      if (r.choice === 'accept') { closeDialog(); buyItem(offer, offer.ask); return; }
+      if (r.choice === 'accept') { await pay(offer.ask); return; }
       if (r.choice === 'auth') {
         if (S.money < AUTH_COST) { msg = 'No tienes caja para pagar al experto.'; continue; }
         msg = authOffer(offer);
@@ -559,28 +644,28 @@
           const cut = Math.max(1, Math.round(offer.ask * (defects ? 0.06 : 0.08)));
           offer.ask = Math.max(offer.floor, offer.ask - cut);
           offer.floor = Math.max(2, offer.floor - Math.round(cut / 2));
+          offer.react = 'good';
           msg = defects ? 'Vale, tiene sus marcas. Te rebajo algo.' : 'Si es efectivo ahora… te hago un precio.';
         } else {
           offer.patience -= 1;
+          offer.react = 'bad';
           msg = defects ? 'Para mí está perfecta, no me vengas con eso.' : 'No tengo prisa. Prefiero esperar.';
         }
       } else if (r.choice === 'offer') {
         const amount = Math.round(r.value);
         if (!(amount > 0)) { msg = 'Dime una cifra, anda.'; continue; }
         if (amount > S.money) { msg = 'No tienes tanta caja para esa oferta.'; continue; }
-        if (amount >= offer.floor) {
-          const price = Math.min(amount, offer.ask);
-          closeDialog();
-          toast(pick(s.lines.accept));
-          buyItem(offer, price);
-          return;
-        }
+        if (amount >= offer.floor) { await pay(Math.min(amount, offer.ask)); return; }
         const near = amount / offer.floor;
+        offer.last = amount;
+        offer.heat = clamp((near - 0.4) / 0.6, 0, 1);
         if (near < 0.6) {
           offer.patience -= 2;
+          offer.react = 'bad';
           msg = pick(s.lines.insult) + ' (Vas muy lejos.)';
         } else {
           offer.patience -= 1;
+          offer.react = 'meh';
           const counter = Math.round(Math.max(offer.floor, offer.ask - (offer.ask - offer.floor) * rand(0.3, 0.5)));
           offer.ask = Math.min(offer.ask, counter);
           msg = pick(s.lines.counter) + (near >= 0.9 ? ' (Estás muy cerca.)' : ' (Aún falta.)');
@@ -590,7 +675,7 @@
         const lastLine = pick(s.lines.leave);
         S.market = S.market.filter(o => o.id !== offer.id);
         save(); renderAll();
-        await dialog(`<div class="neg"><p class="bubble"><span>${s.emoji} ${offer.name}</span>${lastLine}</p><p class="hint">El vendedor se ha ido con la camiseta.</p><div class="actions"><button class="btn primary" data-choice="ok">Vale</button></div></div>`);
+        await dialog(`<div class="neg"><div class="stage"><div class="avatar bad"><span class="av">${s.emoji}</span><span class="face">😠</span><small>${offer.name}</small></div><p class="bubble bad"><span>${s.label}</span>${lastLine}</p></div><p class="hint">El vendedor se ha ido con la camiseta.</p><div class="actions"><button class="btn primary" data-choice="ok">Vale</button></div></div>`);
         closeDialog();
         return;
       }
@@ -708,7 +793,12 @@
   }
 
   function haggleHTML(c, it, offer, listPrice, msg, final, round) {
-    const e = estimateText(it);
+    const est = estimate(it);
+    const start = Math.round((listPrice + offer) / 2);
+    const max = Math.max(listPrice, offer, est.high, it.paid) * 1.2;
+    const pins = [{ cls: 'cost', label: 'Pagaste', v: it.paid }, { cls: 'ask', label: 'Tu precio', v: listPrice }, { cls: 'their', label: 'Ofrece', v: offer }];
+    if (!final) pins.push({ id: 'pin-you', cls: 'you', label: 'Contraoferta', v: start });
+    const profit = offer - it.paid;
     return `
       <div class="neg">
         <div class="neg-head">
@@ -716,18 +806,19 @@
           <div>
             <h3>${title(it)} · ${kitOf(it).type}</h3>
             <p class="sub">${COND[it.cond].label} · Talla ${it.size}</p>
-            <p class="est">Valoración: <b>${e}</b></p>
-            <p class="sub">Tu precio: <b>${fmt(listPrice)}</b> · Pagaste ${fmt(it.paid)}</p>
+            <p class="est">Valoración: <b>${estimateText(it)}</b></p>
           </div>
         </div>
-        <p class="bubble"><span>${c.emoji} ${c.name} · ${c.label}${c.sizeFree ? '' : ' · talla ' + c.size}</span>${msg}</p>
-        <div class="neg-row">
-          <div class="price-tag static"><small>${final ? 'Última oferta' : 'Ofrece'}</small>${fmt(offer)}</div>
-          <p class="patience">Ronda ${round + 1}/3</p>
+        <div class="stage">
+          <div class="avatar ${round === 2 ? 'bad' : ''}"><span class="av">${c.emoji}</span><span class="face">${faceFor(1 - round / 3)}</span><small>${c.name}</small></div>
+          <p class="bubble ${round === 2 ? 'bad' : ''}"><span>${c.label}${c.sizeFree ? '' : ' · talla ' + c.size}</span>${msg}</p>
         </div>
-        ${final ? '' : `<label class="price-input">Tu contraoferta
-          <input id="sheet-input" type="number" inputmode="numeric" min="1" step="1" value="${Math.round((listPrice + offer) / 2)}">
-        </label>`}
+        <div class="meters"><div class="pat"><small>Paciencia</small>${patDots(3 - round, 3)}</div>
+          <span class="gain ${profit >= 0 ? 'pos' : 'neg'}">Si aceptas: ${profit >= 0 ? '+' : ''}${fmt(profit)}</span></div>
+        ${trackHTML(max, est, pins)}
+        ${final ? '' : `${fieldHTML('Tu contraoferta', start)}
+        <div class="fchips">Atajos: <button class="fchip" data-fill="1" data-base="${listPrice}">Mi precio</button><button class="fchip" data-fill="1" data-base="${start}">Mitad</button><button class="fchip" data-fill="1" data-base="${offer + 5}">Su oferta +5</button></div>
+        ${keypadHTML()}`}
         <div class="actions wrap">
           <button class="btn primary" data-choice="accept">Aceptar ${fmt(offer)}</button>
           ${final ? '' : '<button class="btn" data-choice="counter">Contraofertar</button>'}
@@ -758,16 +849,16 @@
     for (let round = 0; round < 3; round++) {
       const last = round === 2;
       const r = await dialog(haggleHTML(c, it, offer, cur, msg, last, round));
-      if (r.choice === 'accept') { closeDialog(); recordSale(it, offer, report); return; }
+      if (r.choice === 'accept') { await stamp('¡Vendida!', '🤝', 'ok', '+' + fmt(offer)); recordSale(it, offer, report); return; }
       if (r.choice === 'reject' || last) {
         closeDialog();
         report.lost.push(r.choice === 'reject' ? `Rechazaste la oferta de ${c.name} por ${title(it)}.` : `${c.name} no llegó a un acuerdo por ${title(it)}.`);
         return;
       }
       const counter = Math.round(r.value);
-      if (counter > 0 && counter <= c.maxPay) { closeDialog(); recordSale(it, Math.max(counter, offer), report); return; }
+      if (counter > 0 && counter <= c.maxPay) { const p = Math.max(counter, offer); await stamp('¡Vendida!', '🤝', 'ok', '+' + fmt(p)); recordSale(it, p, report); return; }
       if (counter > c.maxPay * 1.3) {
-        closeDialog();
+        await stamp('Se ha ido', '😠', 'bad');
         report.lost.push(`${c.name} se ofendió con tu contraoferta por ${title(it)}.`);
         return;
       }
@@ -928,6 +1019,7 @@
       else if (a === 'auth') authStock(b.dataset.uid);
       else if (a === 'filter') { S.view.filter = S.view.filter === b.dataset.f ? 'all' : b.dataset.f; save(); renderAll(); }
       else if (a === 'feature') toggleFeature(b.dataset.uid);
+      else if (a === 'editprice') editPrice(b.dataset.uid);
       else if (a === 'suggestall') { S.stock.forEach(it => { it.listPrice = nice(estimate(it).mid * 1.2); }); save(); renderAll(); toast('Precios sugeridos aplicados a todo.'); }
       else if (a === 'suggest') {
         const it = S.stock.find(x => x.uid === Number(b.dataset.uid));

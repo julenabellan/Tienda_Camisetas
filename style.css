@@ -354,3 +354,94 @@ select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid 
 @media (prefers-reduced-motion: reduce) {
   .card, .shirt, .tab.active, .sheet, .stats b.tick, .card.r4::after { animation: none; transition: none; }
 }
+
+/* =====================================================
+   Negociación visual + teclado numérico propio
+   ===================================================== */
+.price-btn {
+  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "l r" "p r"; align-items: center; text-align: left;
+  width: 100%; border: 2px solid var(--ink-3); border-radius: 10px; padding: 8px 12px; background: var(--ink); color: var(--yellow);
+  cursor: pointer; min-height: 56px; transition: transform .12s, background .2s;
+}
+.price-btn:hover { background: var(--ink-2); }
+.price-btn:active { transform: scale(.98); }
+.price-btn small { grid-area: l; color: #9fb2c6; font-size: .75rem; }
+.price-btn b { grid-area: p; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.6rem; line-height: 1.1; }
+.price-btn span { grid-area: r; color: #fff; font-size: .8rem; background: var(--ink-3); border-radius: 12px; padding: 4px 10px; }
+
+/* Escena: avatar + globo */
+.stage { display: flex; gap: 12px; align-items: flex-start; }
+.avatar { flex: none; width: 74px; display: flex; flex-direction: column; align-items: center; position: relative; }
+.avatar .av {
+  width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 2rem;
+  background: radial-gradient(circle at 30% 25%, #fff, #cfdbe6); border: 3px solid var(--ink-3);
+}
+.avatar .face { position: absolute; top: 40px; right: 2px; font-size: 1.35rem; background: #fff; border-radius: 50%; line-height: 1; padding: 1px; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.avatar small { margin-top: 4px; font-size: .75rem; color: var(--muted); font-weight: 600; text-align: center; }
+.avatar.bad { animation: shake .45s; }
+.avatar.good { animation: hop .5s; }
+.avatar.meh { animation: nudge .4s; }
+@keyframes shake { 0%,100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+@keyframes hop { 0%,100% { transform: none; } 40% { transform: translateY(-12px); } }
+@keyframes nudge { 0%,100% { transform: none; } 50% { transform: rotate(-6deg); } }
+.stage .bubble { flex: 1; margin-top: 4px; }
+.stage .bubble::before { left: -7px; top: 16px; transform: rotate(-45deg); }
+.bubble.bad { background: #fdeeec; border-color: #e7a9a1; }
+.bubble.bad::before { background: #fdeeec; border-color: #e7a9a1; }
+.bubble.good { background: #e6f6ec; border-color: #9ed3b4; }
+.bubble.good::before { background: #e6f6ec; border-color: #9ed3b4; }
+
+/* Paciencia y termómetro */
+.meters { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pat { display: flex; align-items: center; gap: 5px; }
+.pat small { color: var(--muted); margin-right: 3px; }
+.pdot { width: 12px; height: 12px; border-radius: 50%; background: #ccd5dd; border: 2px solid #b4c0cb; transition: background .3s; }
+.pdot.on { background: var(--yellow); border-color: #b88b00; }
+.thermo { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 130px; justify-content: flex-end; }
+.thermo > div { position: relative; flex: 1; max-width: 160px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #5aa7e8, #f4c430, #de4a3b); }
+.thermo i { position: absolute; top: -4px; width: 6px; height: 18px; background: var(--ink); border: 2px solid #fff; border-radius: 3px; transform: translateX(-50%); transition: left .4s; }
+.gain { font-weight: 700; font-size: .9rem; }
+
+/* Barra de precios */
+.track { position: relative; height: 16px; margin: 14px 8px 2px; border-radius: 8px; background: #dbe3ea; }
+.track .band { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: rgba(31,157,99,.55); }
+.pin { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; transform: translate(-50%, -50%); box-shadow: 0 1px 4px rgba(0,0,0,.4); transition: left .25s; }
+.pin.ask, .lg.ask b { background: var(--yellow); }
+.pin.you { background: #2f7de1; z-index: 3; }
+.pin.their { background: #8a55d6; }
+.pin.cost { background: #8b98a5; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .78rem; color: var(--muted); }
+.lg b { color: var(--text); }
+.lg::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; background: #8b98a5; }
+.lg.ask::before { background: var(--yellow); } .lg.you::before { background: #2f7de1; } .lg.their::before { background: #8a55d6; }
+.lg.band-lg::before { background: rgba(31,157,99,.7); border-radius: 3px; width: 14px; }
+.lg.ask b, .lg.you b, .lg.their b, .lg.cost b { background: none; }
+
+/* Marcador de precio y teclado */
+.price-field { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); }
+.pf-row { display: flex; gap: 8px; align-items: stretch; }
+.pf-box { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--ink); border-radius: 10px; padding: 4px 12px; box-shadow: inset 0 2px 8px rgba(0,0,0,.5); }
+.pf-box input { width: 100%; min-width: 0; text-align: right; border: 0; background: transparent; color: var(--yellow); font-family: 'Anton', sans-serif; font-size: 2.3rem; padding: 0; caret-color: transparent; pointer-events: none; }
+.pf-box span { color: var(--yellow); font-family: 'Anton', sans-serif; font-size: 1.6rem; }
+.step { flex: none; width: 56px; border: 1px solid var(--ink-3); background: #fff; border-radius: 10px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; user-select: none; -webkit-user-select: none; }
+.key, .step { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.key {
+  min-height: 52px; border: 0; border-radius: 12px; cursor: pointer;
+  background: linear-gradient(180deg, var(--ink-3), var(--ink-2)); color: #fff;
+  font-family: 'Anton', sans-serif; font-size: 1.5rem; box-shadow: 0 3px 0 #0a1626; transition: transform .06s, box-shadow .06s, background .1s;
+}
+.key:active { transform: translateY(3px); box-shadow: 0 0 0 #0a1626; background: var(--yellow); color: #1a1a1a; }
+.key.alt { background: linear-gradient(180deg, #e9eef2, #cfd9e2); color: var(--ink); box-shadow: 0 3px 0 #9fb0c0; }
+.key.alt:active { background: var(--yellow); }
+.step:active { background: var(--yellow); }
+
+/* Sello de trato */
+.sheet:has(.stamp) { background: transparent; box-shadow: none; }
+.stamp { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 26px 18px; margin: 0 auto; width: max-content; max-width: 100%; background: #fff; border: 5px solid var(--green); color: var(--green); border-radius: 16px; transform: rotate(-5deg); animation: stampin .35s cubic-bezier(.2,1.6,.4,1); }
+.stamp span { font-size: 3.2rem; }
+.stamp b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 2.2rem; text-transform: uppercase; letter-spacing: .04em; }
+.stamp em { font-style: normal; font-weight: 700; font-size: 1.3rem; color: var(--text); }
+.stamp.bad { border-color: var(--red); color: var(--red); }
+@keyframes stampin { from { transform: rotate(-5deg) scale(2.2); opacity: 0; } to { transform: rotate(-5deg) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .avatar, .stamp, .pin, .thermo i { animation: none !important; transition: none !important; } }
