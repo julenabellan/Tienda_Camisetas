@@ -707,3 +707,19 @@ main { border-radius: 16px; margin-top: 12px; box-shadow: 0 10px 30px rgba(0,0,0
   .row .thumb { width: 56px; }
   .row-side { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
 }
+
+
+/* ---------- Fama y colección ---------- */
+.fame-bar { background: var(--paper); color: var(--text); border: 1px solid var(--line); border-left: 5px solid var(--yellow); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.fame-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fame-head b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.1rem; }
+.fame-head span { color: var(--muted); font-size: .85rem; }
+.fame-track { height: 8px; background: #dfe6ec; border-radius: 4px; overflow: hidden; }
+.fame-track div { height: 100%; background: linear-gradient(90deg, var(--yellow), #e8a400); transition: width .4s ease; }
+.fame-bar small { color: var(--muted); font-size: .8rem; }
+.chip.fame { background: #fbefc9; color: #7a5c00; font-weight: 700; }
+.fame-box { display: flex; flex-direction: column; gap: 8px; }
+.fame-sub { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1rem; margin-top: 6px; }
+.fame-box .trend-list li { color: var(--text); flex-wrap: wrap; }
+.fame-box .trend-list li small { color: var(--muted); flex: 1; }
+.fame-box .trend-list li em { font-style: normal; font-weight: 700; margin-left: auto; }

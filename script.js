@@ -108,9 +108,56 @@
     return S.money + S.stock.reduce((s, it) => s + estimate(it).mid, 0);
   }
 
+
+  // ---------- Fama y colección ----------
+  // Cada camiseta que tienes aporta puntos de fama; si la vendes, la tienda pierde esos puntos.
+  const FAME_BASE = { 1: 0.5, 2: 1, 3: 3, 4: 8 };                          // por rareza
+  const FAME_COND = { nueva: 1.25, excelente: 1.1, buena: 1, usada: 0.6 };  // por estado
+  const FAME_TIERS = [
+    { min: 0, name: 'Tienda de barrio', income: 0 },
+    { min: 6, name: 'Conocida en el barrio', income: 0 },
+    { min: 18, name: 'Referente local', income: 4 },
+    { min: 40, name: 'Templo retro', income: 10 },
+    { min: 75, name: 'Museo del fútbol', income: 20 },
+    { min: 120, name: 'Leyenda mundial', income: 35 },
+  ];
+  const COLLECTIONS = [
+    { id: 'legend', icon: '👑', name: 'Leyendas', desc: '3 camisetas legendarias', need: 3, bonus: 8,
+      count: l => l.filter(x => kitOf(x.it).rarity === 4).length },
+    { id: 'n90', icon: '📼', name: 'Años 90', desc: '5 camisetas de 1990-1999', need: 5, bonus: 4,
+      count: l => l.filter(x => { const y = kitOf(x.it).year; return y >= 1990 && y <= 1999; }).length },
+    { id: 'nat', icon: '🌍', name: 'Selecciones', desc: '4 selecciones distintas', need: 4, bonus: 4,
+      count: l => new Set(l.filter(x => kitOf(x.it).nat).map(x => kitOf(x.it).team)).size },
+    { id: 'gk', icon: '🧤', name: 'Porteros', desc: '2 camisetas de portero', need: 2, bonus: 3,
+      count: l => l.filter(x => kitOf(x.it).type === 'Portero').length },
+    { id: 'club', icon: '🏟️', name: 'Fondo de club', desc: '3 camisetas del mismo equipo', need: 3, bonus: 4,
+      count: l => { const m = {}; l.forEach(x => { const t = kitOf(x.it).team; m[t] = (m[t] || 0) + 1; }); return Math.max(0, ...Object.values(m)); } },
+    { id: 'signed', icon: '✍️', name: 'Firmadas', desc: '2 camisetas firmadas', need: 2, bonus: 5,
+      count: l => l.filter(x => x.it.special).length },
+  ];
+
+  function fameOf(it) {
+    const kit = kitOf(it);
+    const auth = it.verified ? (it.real ? 1 : 0) : 0.5;     // sin verificar cuenta la mitad; una réplica no suma
+    return FAME_BASE[kit.rarity] * FAME_COND[it.cond] * (it.special ? 2 : 1) * auth * (S.featured.includes(it.uid) ? 1.5 : 1);
+  }
+
+  function fame() {
+    const items = S.stock.map(it => ({ it, pts: fameOf(it) }));
+    const valid = items.filter(x => x.pts > 0);
+    const sets = COLLECTIONS.map(c => { const n = c.count(valid); return { ...c, n, done: n >= c.need }; });
+    const base = items.reduce((a, x) => a + x.pts, 0);
+    const bonus = sets.reduce((a, c) => a + (c.done ? c.bonus : 0), 0);
+    const score = Math.round(base + bonus);
+    let tier = 0;
+    FAME_TIERS.forEach((t, i) => { if (score >= t.min) tier = i; });
+    return { score, tier, items, sets, base, bonus, next: FAME_TIERS[tier + 1] || null };
+  }
+
   // ---------- Generación ----------
   function genItem() {
-    const kit = weighted(KITS, x => ({ 1: 10, 2: 6, 3: 3, 4: 1.3 })[x.rarity]);
+    const ft = fame().tier;   // con fama, los vendedores te traen más piezas raras
+    const kit = weighted(KITS, x => ({ 1: 10, 2: 6, 3: 3, 4: 1.3 })[x.rarity] * (x.rarity >= 3 ? 1 + 0.2 * ft : 1));
     const fakeChance = 0.08 + 0.05 * (kit.rarity - 1) + (S.fakeBoost > 0 ? 0.2 : 0);
     return {
       uid: S.nextUid++,
@@ -157,6 +204,16 @@
       `<path d="M70 20 L88 46 L100 36 L112 46 L130 20" fill="${c1}" stroke="${c2}" stroke-width="3" stroke-linejoin="round"/>` +
       `<path d="M100 36 V60" stroke="${c2}" stroke-width="2"/><circle cx="100" cy="50" r="1.8" fill="${c2}"/>`;
     return `<path d="M70 20 Q100 44 130 20" fill="none" stroke="${c2}" stroke-width="6" stroke-linecap="round"/>`;
+  }
+
+  // Escudo: en las selecciones, un círculo con la bandera (emoji); en los clubes, el círculo de siempre
+  function crestSVG(kit, id) {
+    if (kit.nat && kit.flag) {
+      return `<clipPath id="${id}f"><circle cx="125" cy="62" r="9.5"/></clipPath>` +
+        `<circle cx="125" cy="62" r="10.5" fill="#fff" stroke="rgba(0,0,0,.45)" stroke-width="1.5"/>` +
+        `<text x="125" y="67.5" font-size="15" text-anchor="middle" clip-path="url(#${id}f)" style="font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${kit.flag}</text>`;
+    }
+    return `<circle cx="125" cy="62" r="6.5" fill="${kit.c2}" stroke="rgba(0,0,0,.3)"/>`;
   }
 
   function shirtSVG(kit) {
@@ -234,7 +291,7 @@
       </g>
       ${collarSVG(kit)}
       <path d="M8 70 L34 92 M192 70 L166 92" stroke="${c2}" stroke-width="5" stroke-linecap="round"/>
-      <circle cx="125" cy="62" r="6.5" fill="${c2}" stroke="rgba(0,0,0,.3)"/>
+      ${crestSVG(kit, id)}
       <rect x="73" y="58" width="10" height="3" rx="1.5" fill="${c2}"/>
       <path d="M52 168 H148 M60 100 Q70 130 62 160 M140 100 Q130 130 138 160" fill="none" stroke="rgba(0,0,0,.14)" stroke-width="3"/>
       <path d="${body}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="2" stroke-linejoin="round"/>
@@ -272,6 +329,11 @@
     return '';
   }
 
+  function fameChip(it) {
+    const p = Math.round(fameOf(it) * 10) / 10;
+    return p >= 1 ? `<span class="chip fame" title="Puntos de fama que aporta a tu tienda">🏛️ +${p}</span>` : '';
+  }
+
   function estimateText(it) {
     const e = estimate(it);
     return `${fmt(e.low)} – ${fmt(e.high)}`;
@@ -291,6 +353,7 @@
           <span class="chip">${COND[it.cond].label}</span>
           ${authChip(it)}
           ${trendChip(kit)}
+          ${S.stock.includes(it) ? fameChip(it) : ''}
         </div>
         <p class="est">Valoración: <b>${estimateText(it)}</b></p>
       </div>`;
@@ -366,7 +429,7 @@
         <div class="thumb">${kitImage(kit)}</div>
         <div class="row-main">
           <h3>${kit.team} ${kit.year} <small>${kit.type}</small></h3>
-          <div class="chips"><span class="chip size">${it.size}</span><span class="chip">${COND[it.cond].label}</span>${authChip(it)}${trendChip(kit)}</div>
+          <div class="chips"><span class="chip size">${it.size}</span><span class="chip">${COND[it.cond].label}</span>${authChip(it)}${trendChip(kit)}${fameChip(it)}</div>
           <p class="seller">Pagaste ${fmt(it.paid)} · ${marginHTML(it)} · ${itemAge(it)} d</p>
           ${authBtn(it, 'sm')}
         </div>
@@ -476,11 +539,13 @@
   }
 
   // ---------- Render ----------
-  function renderHeader() {
+  function renderHeader(f = fame()) {
     $('#st-day').textContent = S.day;
     $('#st-money').textContent = fmt(S.money);
     $('#st-rep').textContent = S.rep;
     $('#st-level').textContent = level();
+    $('#st-fame').textContent = f.score;
+    $('#st-fame').parentElement.title = FAME_TIERS[f.tier].name;
     const nw = netWorth();
     $('#goal-fill').style.width = clamp(nw / GOAL * 100, 0, 100) + '%';
     $('#goal-text').textContent = `Patrimonio ${fmt(nw)} / ${fmt(GOAL)}`;
@@ -505,7 +570,19 @@
     $('#btn-refresh').textContent = `Buscar más (${fmt(REFRESH_COST)})`;
   }
 
-  function renderShop() {
+  function fameBarHTML(f) {
+    const t = FAME_TIERS[f.tier];
+    const nxt = f.next;
+    const pct = nxt ? clamp((f.score - t.min) / (nxt.min - t.min) * 100, 0, 100) : 100;
+    const perks = [`+${f.tier} clientes al día`, `pagan un ${f.tier * 3} % más`, 'más piezas raras en el mercado'];
+    if (t.income) perks.push(`+${fmt(t.income)} diarios por visitas`);
+    return `<div class="fame-head"><b>🏛️ ${t.name}</b><span>${f.score} pts${nxt ? ` · siguiente categoría: ${nxt.min}` : ' · categoría máxima'}</span></div>
+      <div class="fame-track"><div style="width:${pct}%"></div></div>
+      <small>Ventajas: ${perks.join(' · ')}. Las del escaparate puntúan ×1,5. Vender tus mejores piezas resta fama.</small>`;
+  }
+
+  function renderShop(f = fame()) {
+    $('#fame-bar').innerHTML = fameBarHTML(f);
     $('#shop-cap').textContent = `${S.stock.length}/${S.shelfCap} perchas ocupadas`;
     $('#btn-upgrade').textContent = `Ampliar (${fmt(upgradeCost())})`;
     $('#shop-showcase').innerHTML = showcaseHTML();
@@ -528,7 +605,19 @@
     }
   }
 
-  function renderPanel() {
+  function renderCollection(f) {
+    const sets = f.sets.map(c => `<li class="${c.done ? 'up' : ''}"><span>${c.icon}</span><b>${c.name}</b><small>${c.desc}</small><em>${Math.min(c.n, c.need)}/${c.need} · ${c.done ? '+' : ''}${c.bonus} pts</em></li>`).join('');
+    const top = f.items.filter(x => x.pts >= 1).sort((a, b) => b.pts - a.pts).slice(0, 5)
+      .map(x => `<li><b>${title(x.it)}</b><small>Talla ${x.it.size}${S.featured.includes(x.it.uid) ? ' · en escaparate' : ''}</small><em>+${Math.round(x.pts * 10) / 10}</em></li>`).join('');
+    $('#fame-box').innerHTML = `
+      <p class="sub">Fama total: <b>${f.score}</b> (piezas ${Math.round(f.base)} + colecciones ${f.bonus}). Completa colecciones para sumar puntos extra.</p>
+      <ul class="trend-list fame-sets">${sets}</ul>
+      <h4 class="fame-sub">Tus piezas estrella</h4>
+      <ul class="trend-list">${top || '<li>Aún no tienes piezas que aporten fama: busca raras y legendarias.</li>'}</ul>`;
+  }
+
+  function renderPanel(f = fame()) {
+    renderCollection(f);
     const nextLevel = LEVEL_XP[level()];
     $('#panel-stats').innerHTML = `
       <div><i>👕</i><small>Camisetas vendidas</small><b>${S.stats.sold}</b></div>
@@ -554,10 +643,18 @@
     // limpia del escaparate lo que ya no está en stock o no cabe
     S.featured = S.featured.filter(uid => S.stock.some(i => i.uid === uid)).slice(0, maxFeatured());
     svgCount = 0;
-    renderHeader();
+    const f = fame();
+    if (S.fameTier != null && f.tier !== S.fameTier) {
+      const msg = f.tier > S.fameTier
+        ? `Tu tienda sube a «${FAME_TIERS[f.tier].name}»: llega más gente y pagan mejor.`
+        : `Tu tienda baja a «${FAME_TIERS[f.tier].name}»: menos visitas y clientes menos generosos.`;
+      log(msg); toast(msg);
+    }
+    S.fameTier = f.tier;
+    renderHeader(f);
     renderMarket();
-    renderShop();
-    renderPanel();
+    renderShop(f);
+    renderPanel(f);
   }
 
   // ---------- Avisos y diálogos ----------
@@ -916,7 +1013,7 @@
     else if (type === 'tourist') f = 0.9;
     if (c.offSize) f *= 0.85;
     else if (!c.sizeFree && (c.size === 'XL' || c.size === 'XXL')) f *= 1.08;   // agradece encontrar su talla
-    c.maxPay = Math.max(2, perceivedValue(item) * f * rand(0.88, 1.12) * (1 + S.rep / 400));
+    c.maxPay = Math.max(2, perceivedValue(item) * f * rand(0.88, 1.12) * (1 + S.rep / 400) * (1 + fame().tier * 0.03));
     return c;
   }
 
@@ -930,16 +1027,19 @@
 
   function recordSale(it, price, report) {
     const profit = price - it.paid;
+    const fameBefore = fame().score;
     S.money += price;
     S.stock = S.stock.filter(x => x.uid !== it.uid);
     S.featured = S.featured.filter(u => u !== it.uid);
+    const fameLost = fameBefore - fame().score;
+    report.fameLost = (report.fameLost || 0) + fameLost;
     S.stats.sold++;
     S.stats.revenue += price;
     S.stats.profit += profit;
     S.rep = clamp(S.rep + 1, 0, 100);
     addXP(profit > it.paid * 0.5 ? 3 : 1);
     report.income += price;
-    report.sales.push(`${title(it)}: ${fmt(price)} (${profit >= 0 ? '+' : ''}${fmt(profit)})`);
+    report.sales.push(`${title(it)}: ${fmt(price)} (${profit >= 0 ? '+' : ''}${fmt(profit)})${fameLost >= 1 ? ` · 🏛️ −${fameLost} fama` : ''}`);
     if (!it.real && !it.verified && price > replicaValue(it) * 2.5 && Math.random() < 0.5) {
       S.pendingReturns.push({ name: title(it), refund: price });
     }
@@ -1026,7 +1126,7 @@
     if (S.over || S.busy) return;
     S.busy = true;
     const report = { sales: [], lost: [], income: 0, customers: 0 };
-    const n = 4 + Math.floor(S.rep / 25) + randInt(0, 3) + S.traffic;
+    const n = 4 + Math.floor(S.rep / 25) + randInt(0, 3) + S.traffic + fame().tier;
     if (S.stock.length === 0) {
       report.lost.push('No tenías camisetas en el escaparate: nadie entró a mirar.');
     } else {
@@ -1074,6 +1174,15 @@
     S.money -= RENT;
     const lines = [];
     lines.push(`<li>Alquiler: <b>-${fmt(RENT)}</b></li>`);
+    const fm = fame();
+    const visitIncome = FAME_TIERS[fm.tier].income;
+    if (visitIncome > 0) {
+      S.money += visitIncome;
+      lines.push(`<li>🏛️ Visitas a tu colección (${FAME_TIERS[fm.tier].name}): <b>+${fmt(visitIncome)}</b></li>`);
+    }
+    if (report.fameLost >= 1) {
+      lines.push(`<li class="neg">Las ventas de hoy te han restado ${report.fameLost} puntos de fama.</li>`);
+    }
 
     S.day++;
     if (S.pendingReturns.length) {
@@ -1096,7 +1205,7 @@
         <div class="report-banner"><span>🌙</span><div><h3>Cierre del día ${S.day - 1}</h3><p>${report.customers} clientes</p></div><b>${fmt(report.income)}</b></div>
         ${report.sales.length ? `<h4>💰 Ventas</h4><ul class="list-ok">${report.sales.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
         ${report.lost.length ? `<h4>🚪 Ventas perdidas</h4><ul class="list-bad">${report.lost.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
-        <h4>🧾 Gastos</h4><ul>${lines.join('')}</ul>
+        <h4>🧾 Movimientos</h4><ul>${lines.join('')}</ul>
         ${todayNews.length ? `<h4>📰 Noticias para mañana</h4><ul>${todayNews.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
         <div class="actions"><button class="btn primary" data-choice="ok">Empezar el día ${S.day}</button></div>
       </div>`;
