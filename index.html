@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retro Kit Shop · Tienda de camisetas de fútbol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">Retro Kit Shop</div>
+    <div class="stats">
+      <div><small>Día</small><b id="st-day">1</b></div>
+      <div><small>Caja</small><b id="st-money">0 €</b></div>
+      <div><small>Reputación</small><b id="st-rep">0</b></div>
+      <div><small>Ojo</small><b id="st-level">1</b></div>
+    </div>
+    <div class="goal" aria-label="Progreso hacia el objetivo">
+      <div class="goal-bar"><div id="goal-fill"></div></div>
+      <span id="goal-text"></span>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones">
+    <button class="active" data-tab="market">Mercado</button>
+    <button data-tab="shop">Tienda</button>
+    <button data-tab="panel">Panel</button>
+  </nav>
+
+  <main>
+    <section id="tab-market" class="tab active">
+      <div class="section-head">
+        <h2>Ofertas de hoy</h2>
+        <button id="btn-refresh" class="btn">Buscar más</button>
+      </div>
+      <div id="market-grid" class="grid"></div>
+    </section>
+
+    <section id="tab-shop" class="tab">
+      <div class="section-head">
+        <div>
+          <h2>Tu escaparate</h2>
+          <p id="shop-cap" class="sub"></p>
+        </div>
+        <button id="btn-upgrade" class="btn">Ampliar</button>
+      </div>
+      <div id="shop-grid" class="grid"></div>
+    </section>
+
+    <section id="tab-panel" class="tab">
+      <div class="section-head"><h2>Panel del negocio</h2></div>
+      <div id="panel-stats" class="panel-stats"></div>
+      <h3 class="block-title">Tendencias del mercado</h3>
+      <ul id="trend-list" class="trend-list"></ul>
+      <h3 class="block-title">Noticias y movimientos</h3>
+      <ul id="news-list" class="news-list"></ul>
+      <button id="btn-reset" class="btn ghost reset">Reiniciar partida</button>
+    </section>
+  </main>
+
+  <footer class="daybar">
+    <button id="btn-open" class="btn primary big">Abrir tienda y cerrar el día</button>
+  </footer>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div id="sheet" class="sheet"></div>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
