@@ -264,16 +264,22 @@
   // Tamaño del logo (ancho x alto)
   const LOGO_W = 28, LOGO_H = 19.5;
 
+  // Rayas verticales: ancho de la raya, separación entre el inicio de una y la siguiente, y posición de la primera
+  // (hueco de color base centrado en la camiseta; separación mayor = más sitio para el logo)
+  const STRIPE_W = 13, STRIPE_STEP = 32;
+  const STRIPE_X0 = 100 - STRIPE_STEP / 2 - STRIPE_W / 2 - STRIPE_STEP * 3; // = -18.5 → hueco de color base justo en el centro (x=100)
+
   // Sitio del logo: centro y color del fondo sobre el que queda.
   // Por defecto, pecho derecho; con rayas se centra en una franja (la más cercana) para no quedar entre dos rayas.
   function logoSpot(kit) {
     const spot = { cx: 81, cy: 58 + LOGO_DY, bg: kit.c1 };
     if (kit.pattern === 'stripes') {
-      // franjas c2: x = 4 + 26n (13 de ancho); franjas c1 entre medias
+      // franjas c2 de ancho STRIPE_W cada STRIPE_STEP; franjas c1 entre medias
       let best = null;
-      for (let x = 4 - 26; x < 200; x += 13) {
-        const cx = x + 6.5, isC2 = ((x - 4) / 13) % 2 === 0;
-        if (!best || Math.abs(cx - 81) < Math.abs(best.cx - 81)) best = { cx, bg: isC2 ? kit.c2 : kit.c1 };
+      for (let x = STRIPE_X0 - STRIPE_STEP; x < 200; x += STRIPE_STEP) {
+        [[x + STRIPE_W / 2, kit.c2], [x + STRIPE_W + (STRIPE_STEP - STRIPE_W) / 2, kit.c1]].forEach(([cx, bg]) => {
+          if (!best || Math.abs(cx - 81) < Math.abs(best.cx - 81)) best = { cx, bg };
+        });
       }
       spot.cx = best.cx; spot.bg = best.bg;
     } else if (kit.pattern === 'hoops') {
@@ -326,7 +332,7 @@
     let pat = '';
     switch (kit.pattern) {
       case 'stripes':
-        for (let x = 4; x < 196; x += 26) pat += `<rect x="${x}" y="0" width="13" height="200" fill="${c2}"/>`;
+        for (let x = STRIPE_X0; x < 200; x += STRIPE_STEP) pat += `<rect x="${x}" y="0" width="${STRIPE_W}" height="200" fill="${c2}"/>`;
         break;
       case 'hoops':
         for (let y = 24; y < 190; y += 26) pat += `<rect x="0" y="${y}" width="200" height="13" fill="${c2}"/>`;
