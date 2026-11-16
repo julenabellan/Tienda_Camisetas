@@ -209,7 +209,7 @@
   // Escudo: en las selecciones, la bandera (emoji) directamente sobre la camiseta; en los clubes, el círculo de siempre
   function crestSVG(kit) {
     // con rayas, el escudo queda a la misma distancia del centro que el logo, pero en el lado opuesto
-    const cx = kit.pattern === 'stripes' ? 200 - logoSpot(kit).cx : 125;
+    const cx = kit.pattern === 'stripes' ? 200 - logoSpot(kit).cx : 125 + SPREAD;
     // con rayas el escudo cae sobre una raya c2: se rellena con un color que contraste (nunca el de la raya)
     const fill = kit.pattern === 'stripes' ? inkOn(kit.c2, kit.c1) : kit.c2;
     if (kit.nat && kit.flag) {
@@ -273,19 +273,34 @@
   const STRIPE_W = 18, STRIPE_STEP = 36;
   // Tamaño del logo cuando va sobre una raya: siempre más pequeño que la raya (margen a cada lado)
   const STRIPE_LOGO = STRIPE_W - 3;
+  // Separación sutil entre logo y escudo: cada uno se aparta SPREAD unidades del centro (logo a la izquierda, escudo a la derecha)
+  const SPREAD = 3;
   const STRIPE_X0 = 100 - STRIPE_STEP / 2 - STRIPE_W / 2 - STRIPE_STEP * 3; // → hueco de color base justo en el centro (x=100)
+
+  // Rayas [x, ancho]: las dos del centro (las del logo y el escudo) se apartan SPREAD del centro y las laterales
+  // contiguas se estrechan SPREAD por el lado interior, para que la separación entre rayas siga igual.
+  function stripeRects() {
+    const out = [];
+    for (let x = STRIPE_X0; x < 200; x += STRIPE_STEP) {
+      const c = x + STRIPE_W / 2, d = Math.abs(c - 100), left = c < 100;
+      if (d < STRIPE_STEP) out.push([left ? x - SPREAD : x + SPREAD, STRIPE_W]);                          // centrales
+      else if (d < STRIPE_STEP * 2) out.push([left ? x : x + SPREAD, STRIPE_W - SPREAD]);                  // laterales
+      else out.push([x, STRIPE_W]);
+    }
+    return out;
+  }
 
   // Sitio del logo: centro y color del fondo sobre el que queda.
   // Por defecto, pecho derecho; con rayas se centra dentro de una raya (la más cercana), más ancha que el logo.
   function logoSpot(kit) {
-    const spot = { cx: 81, cy: 58 + LOGO_DY, bg: kit.c1, w: LOGO_W, h: LOGO_H, k: 1 };
+    const spot = { cx: 81 - SPREAD, cy: 58 + LOGO_DY, bg: kit.c1, w: LOGO_W, h: LOGO_H, k: 1 };
     if (kit.pattern === 'stripes') {
       // el logo va siempre centrado DENTRO de una raya c2 (la más cercana al pecho) y encogido para que quepa
       let bestX = null;
-      for (let x = STRIPE_X0 - STRIPE_STEP; x < 200; x += STRIPE_STEP) {
-        const cx = x + STRIPE_W / 2;
+      stripeRects().forEach(([x, w]) => {
+        const cx = x + w / 2;
         if (bestX === null || Math.abs(cx - 81) < Math.abs(bestX - 81)) bestX = cx;
-      }
+      });
       spot.cx = bestX; spot.bg = kit.c2;
       spot.w = STRIPE_LOGO; spot.h = STRIPE_LOGO; spot.k = STRIPE_LOGO / LOGO_W;
     } else if (kit.pattern === 'hoops') {
@@ -338,7 +353,7 @@
     let pat = '';
     switch (kit.pattern) {
       case 'stripes':
-        for (let x = STRIPE_X0; x < 200; x += STRIPE_STEP) pat += `<rect x="${x}" y="0" width="${STRIPE_W}" height="200" fill="${c2}"/>`;
+        stripeRects().forEach(([x, w]) => { pat += `<rect x="${x}" y="0" width="${w}" height="200" fill="${c2}"/>`; });
         break;
       case 'hoops':
         for (let y = 24; y < 190; y += 26) pat += `<rect x="0" y="${y}" width="200" height="13" fill="${c2}"/>`;
