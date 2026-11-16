@@ -127,6 +127,11 @@ const KITS = [
   k('Blackburn Rovers', 1995, 'Local', 'Asics', 170, 3, '#FFFFFF', '#0057B8', 'halves'),
   k('Aston Villa', 1994, 'Local', 'Asics', 110, 2, '#7B1E3A', '#8FC1E3', 'sleeves'),
   k('Parma', 1999, 'Local', 'Champion', 150, 3, '#FFFFFF', '#FDE100', 'cross', false, '#003DA5'),
+  // Liga española
+  k('Barcelona', 1999, 'Local', 'Nike', 160, 3, '#A50044', '#004D98', 'stripes'),
+  k('Real Madrid', 1999, 'Visitante', 'Adidas', 130, 2, '#1B2A6B', '#F5C400', 'solid'),
+  k('Atlético de Madrid', 1999, 'Local', 'Nike', 120, 2, '#CB3524', '#FFFFFF', 'stripes'),
+  k('Real Zaragoza', 1995, 'Local', 'Reebok', 150, 3, '#FFFFFF', '#1B458F', 'yoke'),
 ];
 
 const KIT_BY_ID = Object.fromEntries(KITS.map(x => [x.id, x]));
