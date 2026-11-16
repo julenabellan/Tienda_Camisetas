@@ -243,20 +243,35 @@
     }
   }
 
-  // Logos en PNG por marca (ruta relativa a index.html). De momento, solo Adidas.
+  // Logos en PNG por marca (carpeta Logos/, ruta relativa a index.html).
+  // Algunas marcas cambian de logo según el año de la camiseta.
   // El PNG se tiñe con el color de la tinta de la camiseta (alfa del PNG + color), así que debe tener fondo transparente.
-  const BRAND_LOGOS = { Adidas: 'Logos/Adidas.png' };
+  function brandLogoSrc(kit) {
+    const y = kit.year;
+    switch (kit.brand) {
+      case 'Adidas': return 'Logos/' + (y < 1990 ? 'Adidas2' : y <= 2023 ? 'Adidas' : 'Adidas3') + '.png';
+      case 'Nike': return 'Logos/' + (y <= 1999 ? 'Nike2' : 'Nike') + '.png';
+      case 'Puma': return 'Logos/Puma.png';
+      case 'Umbro': return 'Logos/Umbro.png';
+      case 'Kappa': return 'Logos/' + (y <= 2006 ? 'Kappa' : 'Kappa1') + '.png';
+      case 'Asics': return 'Logos/Asics.png';
+      default: return '';
+    }
+  }
+
+  // Bajada del logo en el pecho (unidades del dibujo; súbelo o bájalo a tu gusto)
+  const LOGO_DY = 4;
 
   // Logo de la marca en el pecho (lado derecho del jugador)
   function brandLogo(kit, id) {
     const drawn = brandLogoDrawn(kit);
-    const src = BRAND_LOGOS[kit.brand];
-    if (!src) return drawn;
+    const src = brandLogoSrc(kit);
+    if (!src) return `<g transform="translate(0 ${LOGO_DY})">${drawn}</g>`;
     const ink = inkOn(kit.c1, kit.c2);
     // si el PNG no carga, se muestra el dibujo de siempre
-    return `<g><g style="display:none">${drawn}</g>` +
+    return `<g><g style="display:none" transform="translate(0 ${LOGO_DY})">${drawn}</g>` +
       `<filter id="${id}b" color-interpolation-filters="sRGB"><feFlood flood-color="${ink}"/><feComposite in2="SourceAlpha" operator="in"/></filter>` +
-      `<image href="${src}" x="68" y="49" width="26" height="18" preserveAspectRatio="xMidYMid meet" filter="url(#${id}b)" ` +
+      `<image href="${src}" x="68" y="${49 + LOGO_DY}" width="26" height="18" preserveAspectRatio="xMidYMid meet" filter="url(#${id}b)" ` +
       `onerror="this.parentNode.firstElementChild.style.display='';this.remove()"/></g>`;
   }
 
