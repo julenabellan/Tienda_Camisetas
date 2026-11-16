@@ -261,7 +261,13 @@ function stars(r) { return `<span class="stars" aria-label="${r} de 4 estrellas"
 function eraLabel(kit) { return kit.year <= 2000 ? 'Retro' : kit.year <= 2010 ? 'Clásica' : 'Moderna'; }
 
 function authChip(it) {
-  if (!it.verified) return '<span class="chip warn">? Sin verificar</span>';
+  if (!it.verified) {
+    // impresión tras inspeccionarla a ojo (no es seguro)
+    if (it.hint === 'real') return '<span class="chip good" title="Solo es una impresión a ojo">🔍 Parece auténtica</span>';
+    if (it.hint === 'fake') return '<span class="chip bad" title="Solo es una impresión a ojo">🔍 Sospechosa</span>';
+    if (it.hint === 'unsure') return '<span class="chip warn" title="No lo has visto claro">🔍 Dudosa</span>';
+    return '<span class="chip warn">? Sin verificar</span>';
+  }
   return it.real ? '<span class="chip good">✔ Auténtica</span>' : '<span class="chip bad">✖ Réplica</span>';
 }
 
@@ -810,6 +816,7 @@ function startOfDayEvents() {
 }
 
 async function endDay(report) {
+  overnightSales(report);   // ventas de un día para otro: pagan y se van sin regatear
   S.money -= RENT;
   const lines = [];
   lines.push(`<li>Alquiler: <b>-${fmt(RENT)}</b></li>`);

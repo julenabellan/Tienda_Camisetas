@@ -19,6 +19,37 @@ function buyItem(offer, price) {
   return true;
 }
 
+// ---------- Inspección a ojo (gratis, no es 100 % fiable) ----------
+// Más nivel de «ojo» = más aciertos. El vendedor también influye: unos disimulan mejor que otros.
+// Cada vendedor tiene `fakeMod` en data.js (+ más fácil de ver · − más difícil).
+
+function inspectChance(sellerId) {
+  const s = SELLERS[sellerId] || {};
+  const mod = s.fakeMod || 0;
+  return clamp(0.5 + 0.08 * (level() - 1) + mod, 0.35, 0.95);
+}
+
+const INSPECT_LINES = {
+  real: 'Miras costuras, etiqueta y escudo: todo parece en orden. Te da buena impresión.',
+  fake: 'Algo no cuadra: costuras irregulares y etiqueta rara. Te huele a réplica.',
+  unsure: 'Le das vueltas, pero no sacas nada en claro. Podría ser cualquiera de las dos.',
+};
+
+function inspectItem(offer) {
+  const it = offer.item;
+  if (it.verified || it.inspected) return 'Ya la has examinado.';
+  it.inspected = true;
+  addXP(1);
+  const p = inspectChance(offer.seller);
+  const r = Math.random();
+  let read;
+  if (r < p) read = it.real ? 'real' : 'fake';                       // aciertas
+  else if (r < p + (1 - p) * 0.5) read = 'unsure';                   // no lo ves claro
+  else read = it.real ? 'fake' : 'real';                             // te engañan
+  it.hint = read;
+  return INSPECT_LINES[read];
+}
+
 function authOffer(offer) {
   const it = offer.item;
   if (it.verified) return '';
@@ -141,6 +172,7 @@ function sellerDialogHTML(offer, msg) {
       <div class="actions wrap tactics">
         <button class="btn sm" data-choice="defects"${used.defects ? ' disabled' : ''}>🔎 Señalar defectos</button>
         <button class="btn sm" data-choice="cash"${used.cash ? ' disabled' : ''}>💶 Efectivo ya</button>
+        ${it.verified ? '' : `<button class="btn sm" data-choice="inspect" title="Gratis, pero no es seguro"${it.inspected ? ' disabled' : ''}>🔍 Inspeccionar (~${Math.round(inspectChance(offer.seller) * 100)} %)</button>`}
         ${it.verified ? '' : `<button class="btn sm" data-choice="auth">Autenticar (${fmt(AUTH_COST)})</button>`}
         <button class="btn sm ghost" data-choice="leave">Irme</button>
       </div>
@@ -165,6 +197,11 @@ async function negotiateBuy(offerId) {
     if (r.choice === 'auth') {
       if (S.money < AUTH_COST) { msg = 'No tienes caja para pagar al experto.'; continue; }
       msg = authOffer(offer);
+      save(); renderAll();
+      continue;
+    }
+    if (r.choice === 'inspect') {
+      msg = inspectItem(offer);
       save(); renderAll();
       continue;
     }
@@ -431,13 +468,45 @@ const CLIENT_LINES = {
   size: ' Me quedaría justa de talla, así que ajustemos el precio.',
 };
 
+// Probabilidad de que el cliente pague el precio marcado sin regatear.
+// ratio = precio marcado / lo máximo que pagaría. Barato → casi siempre compra directo;
+// caro → casi siempre negocia, pero a veces paga igualmente.
+function directBuyChance(c, ratio) {
+  if (c.type === 'tourist') return ratio <= 1.15 ? 1 : 0;   // el turista nunca regatea
+  let p;
+  if (ratio <= 0.6) p = 0.95;
+  else if (ratio <= 1) p = 0.95 - (ratio - 0.6) / 0.4 * 0.6;   // 0.95 → 0.35
+  else if (ratio <= 1.15) p = 0.12;                            // caro: a veces paga igual
+  else p = 0;
+  if (c.type === 'bargain') p *= 0.4;                          // el cazador de gangas siempre intenta regatear
+  return p;
+}
+const wantsDirectBuy = (c, ratio) => Math.random() < directBuyChance(c, ratio);
+
+// Ventas "de un día para otro": clientes que entran, pagan y se van sin diálogo.
+// Llamar desde endDay(report) antes de cerrar el informe: overnightSales(report);
+function overnightSales(report) {
+  if (!S.stock.length) return 0;
+  const n = randInt(1, 2 + Math.floor(S.rep / 40) + S.traffic);
+  let sold = 0;
+  for (let i = 0; i < n && S.stock.length > 0; i++) {
+    const c = genCustomer();
+    if (!c.item) continue;
+    const ratio = c.item.listPrice / c.maxPay;
+    if (ratio <= 1 && wantsDirectBuy(c, ratio)) { recordSale(c.item, c.item.listPrice, report); sold++; }
+  }
+  if (sold) report.sales.push(`🌙 ${sold} ${sold === 1 ? 'cliente compró' : 'clientes compraron'} sin regatear de un día para otro.`);
+  return sold;
+}
+
 async function serveCustomer(c, report) {
   const it = c.item;
   if (!it) { report.lost.push(missText(c)); return; }
   let cur = it.listPrice;
   const ratio = cur / c.maxPay;
   const tourist = c.type === 'tourist';
-  if (ratio <= (tourist ? 1.15 : 1)) { recordSale(it, cur, report); return; }
+  // Compra directa: paga el precio marcado y se va, sin regatear
+  if (wantsDirectBuy(c, ratio)) { recordSale(it, cur, report); return; }
   if (ratio > 1.6) { report.lost.push(`${c.name} vio ${title(it)} a ${fmt(cur)} y le pareció carísima.`); return; }
   if (tourist) { report.lost.push(`${c.name} no quiso pagar ${fmt(cur)} por ${title(it)}.`); return; }
 

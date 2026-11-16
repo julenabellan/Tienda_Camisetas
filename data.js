@@ -410,7 +410,7 @@ const NAMES = [
 const SELLERS = {
   heredero: {
     label: 'Ha encontrado una caja en el desván', emoji: '📦',
-    ask: [0.25, 0.65], floor: [0.55, 0.8], patience: 3,
+    ask: [0.25, 0.65], floor: [0.55, 0.8], patience: 3, fakeMod: 0.1,   // sincero, no disimula nada
     lines: {
       greet: ['No sé cuánto vale, mi padre las guardaba.', 'Estaba en un baúl. Haz una oferta.'],
       counter: ['Mmm… algo más y es tuya.', 'Me da pena, pero por eso no.'],
@@ -421,7 +421,7 @@ const SELLERS = {
   },
   coleccionista: {
     label: 'Coleccionista exigente', emoji: '🧐',
-    ask: [1.1, 1.5], floor: [0.8, 0.95], patience: 2,
+    ask: [1.1, 1.5], floor: [0.8, 0.95], patience: 2, fakeMod: -0.05,   // piezas muy cuidadas, pocas pistas
     lines: {
       greet: ['Pieza de colección. No tengo prisa.', 'Conozco lo que vale esta camiseta.'],
       counter: ['Puedo bajar un poco, no mucho.', 'Estoy cerca, pero aún no.'],
@@ -432,7 +432,7 @@ const SELLERS = {
   },
   liquidacion: {
     label: 'Tienda en liquidación', emoji: '🏷️',
-    ask: [0.7, 1.0], floor: [0.82, 0.93], patience: 3,
+    ask: [0.7, 1.0], floor: [0.82, 0.93], patience: 3, fakeMod: -0.1,   // stock mezclado, difícil de leer
     lines: {
       greet: ['Liquidamos stock, precios cerrados… casi.', 'Todo debe salir esta semana.'],
       counter: ['Por ser tú, un poco menos.', 'Mi jefe me mata, pero vale esto.'],
@@ -443,7 +443,7 @@ const SELLERS = {
   },
   revendedor: {
     label: 'Revendedor online', emoji: '💻',
-    ask: [0.9, 1.3], floor: [0.72, 0.9], patience: 3,
+    ask: [0.9, 1.3], floor: [0.72, 0.9], patience: 3, fakeMod: -0.15,   // profesional: sabe cómo presentar una réplica
     lines: {
       greet: ['Auténtica al 100 %, tengo mil valoraciones.', 'Precio de mercado, mira cualquier web.'],
       counter: ['Te hago un descuento por cantidad… de uno.', 'Último esfuerzo, de verdad.'],
@@ -454,7 +454,7 @@ const SELLERS = {
   },
   apurado: {
     label: 'Necesita dinero rápido', emoji: '⏳',
-    ask: [0.5, 0.85], floor: [0.6, 0.78], patience: 4,
+    ask: [0.5, 0.85], floor: [0.6, 0.78], patience: 4, fakeMod: 0.05,   // con prisa, no se esfuerza en disimular
     lines: {
       greet: ['Necesito venderla hoy mismo.', 'Si me das el efectivo ahora, hablamos.'],
       counter: ['Estoy apurado, pero tanto no.', 'Un poco más y cerramos.'],
