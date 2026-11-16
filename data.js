@@ -47,7 +47,7 @@ const KITS = [
   k('Argentina', 2010, 'Visitante', 'Adidas', 95, 1, '#1F4FA3', '#FFFFFF', 'solid', true),
   k('Argentina', 2022, 'Local', 'Adidas', 200, 3, '#FFFFFF', '#75AADB', 'stripes', true),
 
-  k('Brasil', 1970, 'Local', 'Umbro', 320, 4, '#FFD500', '#0A8F3C', 'solid', true),
+  k('Brasil', 1970, 'Local', 'Athleta', 320, 4, '#FFD500', '#0A8F3C', 'solid', true),
   k('Brasil', 1994, 'Visitante', 'Umbro', 190, 3, '#1B3E9A', '#FFD500', 'solid', true),
   k('Brasil', 1998, 'Local', 'Nike', 230, 4, '#FFD500', '#0A8F3C', 'solid', true),
   k('Brasil', 1998, 'Visitante', 'Nike', 160, 3, '#1B3E9A', '#FFD500', 'sleeves', true),
@@ -104,11 +104,11 @@ const KITS = [
 
   k('Senegal', 2002, 'Local', 'Puma', 160, 3, '#FFFFFF', '#00853F', 'band', true),
 
-  k('Sudáfrica', 1998, 'Local', 'Umbro', 140, 2, '#FCD116', '#007749', 'wave', true),
+  k('Sudáfrica', 1998, 'Local', 'Adidas', 140, 2, '#FCD116', '#007749', 'wave', true),
 
   k('Suecia', 1994, 'Local', 'Adidas', 130, 2, '#FCD116', '#006AA7', 'band', true),
 
-  k('Turquía', 2002, 'Local', 'Nike', 110, 2, '#E30A17', '#FFFFFF', 'solid', true),
+  k('Turquía', 2002, 'Local', 'Adidas', 110, 2, '#E30A17', '#FFFFFF', 'solid', true),
 
   k('Uruguay', 1990, 'Local', 'Umbro', 120, 2, '#6CB4E4', '#111111', 'solid', true),
 
