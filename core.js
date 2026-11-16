@@ -32,22 +32,60 @@ const COND = Object.fromEntries(CONDITIONS.map(c => [c.id, c]));
 const PACK_SOURCES = {
   tienda: {
     icon: '🏬', label: 'Tienda', names: ['Retro Mayorista', 'Distribuciones Gol', 'Almacén Fútbol', 'Textil Deportivo Norte', 'Camisetas al por mayor'],
-    size: [3, 5], ask: [0.95, 1.1], step: 0.05, max: 0.2, full: 0.05, real: 0.98, boost: 0,
+    w: 22, size: [3, 5], ask: [0.95, 1.1], step: 0.05, max: 0.2, full: 0.05, real: 0.98, boost: 0,
     cond: { nueva: 30, excelente: 45, buena: 25, usada: 0 },
     desc: 'Precio fijo y género fiable. Cuantas más compres, más descuento.', tag: '✔ Género fiable', tagCls: 'good',
   },
   outlet: {
     icon: '🏷️', label: 'Outlet', names: ['Outlet Fin de Temporada', 'Outlet Gol Express', 'Liquidaciones Retro', 'Outlet La Grada'],
-    size: [4, 6], ask: [0.8, 0.95], step: 0.06, max: 0.3, full: 0.05, real: 0.8, boost: 0.1,
+    w: 18, size: [4, 6], ask: [0.8, 0.95], step: 0.06, max: 0.3, full: 0.05, real: 0.8, boost: 0.1,
     cond: { nueva: 10, excelente: 20, buena: 40, usada: 30 },
     desc: 'Descuentos enormes, pero hay piezas gastadas y riesgo de réplicas.', tag: '⚠️ Riesgo de réplicas', tagCls: 'warn',
   },
   particular: {
     icon: '🧑', label: 'Particular', names: null,
-    size: [2, 3], ask: [0.85, 1], step: 0.1, max: 0.2, full: 0.05, real: null, boost: 0, cond: null,
+    w: 20, size: [2, 3], ask: [0.85, 1], step: 0.1, max: 0.2, full: 0.05, real: null, boost: 0, cond: null,
     desc: 'Un coleccionista vende varias a la vez: si te llevas más de una, te rebaja.', tag: '🤝 Trato personal', tagCls: 'cold',
   },
+  subasta: {
+    icon: '🔨', label: 'Casa de subastas', names: ['Subastas Gran Premio', 'Casa Peral Subastas', 'Sala de Subastas Antiguas', 'Subastas del Estadio'],
+    w: 8, size: [2, 4], ask: [1.05, 1.3], step: 0.03, max: 0.12, full: 0.03, real: 0.99, boost: 0, minRarity: 3,
+    cond: { nueva: 15, excelente: 40, buena: 35, usada: 10 },
+    desc: 'Solo piezas raras y certificadas. Caras y con poco descuento, pero muy valiosas.', tag: '✔ Piezas certificadas', tagCls: 'good',
+  },
+  herencia: {
+    icon: '👴', label: 'Herencia familiar', names: ['Baúl de los abuelos', 'Armario de la tía Rosa', 'Herencia de Don Paco', 'Desván de la casa de Ramón', 'Trastero de un hincha'],
+    w: 14, size: [3, 6], ask: [0.4, 0.7], step: 0.04, max: 0.16, full: 0.1, real: 0.9, boost: 0.05,
+    cond: { nueva: 3, excelente: 12, buena: 40, usada: 45 },
+    desc: 'Una familia vende todo junto. Muy baratas, pero con mucho desgaste y alguna sorpresa.', tag: '🎲 Sorpresa', tagCls: 'warn',
+  },
+  club: {
+    icon: '🏟️', label: 'Tienda de club', names: null, theme: 'team',
+    w: 14, size: [3, 5], ask: [0.9, 1.05], step: 0.05, max: 0.2, full: 0.05, real: 0.97, boost: 0,
+    cond: { nueva: 25, excelente: 40, buena: 30, usada: 5 },
+    desc: 'Fondo de armario de un solo equipo. Ideal para completar tu colección de club.', tag: '🏟️ Un solo equipo', tagCls: 'good',
+  },
+  importador: {
+    icon: '🌍', label: 'Importador', names: ['Importaciones Mundial', 'Coleccionismo Global', 'Camisetas del Mundo', 'Selecciones Retro Import'], theme: 'nat',
+    w: 10, size: [3, 5], ask: [0.8, 0.95], step: 0.06, max: 0.25, full: 0.05, real: 0.85, boost: 0.1,
+    cond: { nueva: 12, excelente: 28, buena: 40, usada: 20 },
+    desc: 'Lote de selecciones nacionales traídas de fuera. Buen precio, algo de riesgo de réplicas.', tag: '⚠️ Riesgo de réplicas', tagCls: 'warn',
+  },
+  noventas: {
+    icon: '📼', label: 'Coleccionista retirado', names: ['Colección de los 90', 'Años dorados', 'Memorias del 94 al 99', 'Recuerdos de los 90'], theme: 'era90',
+    w: 10, size: [3, 5], ask: [0.85, 1.0], step: 0.06, max: 0.22, full: 0.06, real: 0.94, boost: 0.03,
+    cond: { nueva: 8, excelente: 30, buena: 42, usada: 20 },
+    desc: 'Solo camisetas de 1990 a 1999. Muy pedidas por los nostálgicos.', tag: '📼 Solo años 90', tagCls: 'cold',
+  },
 };
+
+// Temas de lote (filtran qué camisetas puede traer)
+const PACK_THEMES = {
+  nat: x => x.nat,
+  era90: x => x.year >= 1990 && x.year <= 1999,
+};
+// Cuántos lotes aparecen cada día: unos días ninguno, otros hasta cuatro
+const PACK_COUNT_W = [[0, 14], [1, 30], [2, 30], [3, 18], [4, 8]];
 
 let S = null;       // estado del juego
 
@@ -84,7 +122,7 @@ function newGame() {
     featured: [], view: { filter: 'all', sort: 'manual', mode: 'cards', v3: true }, marketSort: 'ganga', sizeLost: {},
   };
   S.market = genMarket();
-  S.packs = genPacks();
+  S.packs = genPacks(true);   // el primer día siempre hay al menos un lote
   S.news.unshift({ day: 1, text: 'Abres la tienda. Compra barato, vende bien y cuida tu reputación.' });
   return S;
 }
@@ -182,9 +220,10 @@ function fame() {
 }
 
 // ---------- Generación ----------
-function genItem() {
+function genItem(filter) {
   const ft = fame().tier;   // con fama, los vendedores te traen más piezas raras
-  const kit = weighted(KITS, x => ({ 1: 10, 2: 6, 3: 3, 4: 1.3 })[x.rarity] * (x.rarity >= 3 ? 1 + 0.2 * ft : 1));
+  const pool = filter ? KITS.filter(filter) : KITS;
+  const kit = weighted(pool.length ? pool : KITS, x => ({ 1: 10, 2: 6, 3: 3, 4: 1.3 })[x.rarity] * (x.rarity >= 3 ? 1 + 0.2 * ft : 1));
   const fakeChance = 0.08 + 0.05 * (kit.rarity - 1) + (S.fakeBoost > 0 ? 0.2 : 0);
   return {
     uid: S.nextUid++,
@@ -223,8 +262,10 @@ function genMarket() {
   return Array.from({ length: n }, genOffer);
 }
 
-function genPackItem(src) {
-  const it = genItem();
+function genPackItem(src, filter) {
+  const minR = src.minRarity || 0;
+  const f = filter || minR ? (x => (!filter || filter(x)) && x.rarity >= minR) : null;
+  const it = genItem(f);
   if (src.cond) it.cond = weighted(CONDITIONS.filter(c => src.cond[c.id] > 0), c => src.cond[c.id]).id;
   if (src.real != null) it.real = Math.random() < src.real - (S.fakeBoost > 0 ? src.boost : 0);
   return it;
@@ -233,14 +274,41 @@ function genPackItem(src) {
 function genPack(srcId) {
   const src = PACK_SOURCES[srcId];
   const n = randInt(src.size[0], src.size[1]);
+  let filter = PACK_THEMES[src.theme] || null, team = null;
+  if (src.theme === 'team') {
+    // un equipo de club con al menos 3 camisetas en el catálogo
+    const counts = {};
+    KITS.forEach(x => { if (!x.nat) counts[x.team] = (counts[x.team] || 0) + 1; });
+    team = pick(Object.keys(counts).filter(t => counts[t] >= 3));
+    filter = x => x.team === team;
+  }
+  const used = new Set();
   const items = Array.from({ length: n }, () => {
-    const item = genPackItem(src);
+    let item;
+    for (let t = 0; t < 6; t++) {                 // evita repetir la misma camiseta en el lote
+      item = genPackItem(src, filter);
+      if (!used.has(item.kitId)) break;
+    }
+    used.add(item.kitId);
     return { item, price: Math.max(3, nice(valueIfReal(item) * rand(src.ask[0], src.ask[1]))) };
   });
-  return { id: S.nextOffer++, src: srcId, name: src.names ? pick(src.names) : pick(NAMES), items };
+  const name = team ? `Lote ${team}` : src.names ? pick(src.names) : pick(NAMES);
+  return { id: S.nextOffer++, src: srcId, name, items };
 }
 
-function genPacks() { return Object.keys(PACK_SOURCES).map(genPack); }
+// Cada día hay un número distinto de lotes (0-4) y de vendedores distintos
+function genPacks(guarantee) {
+  let n = weighted(PACK_COUNT_W, x => x[1])[0];
+  if (guarantee) n = Math.max(n, 1);
+  const ids = Object.keys(PACK_SOURCES);
+  const out = [];
+  for (let i = 0; i < n && ids.length; i++) {
+    const id = weighted(ids, s => PACK_SOURCES[s].w || 10);
+    ids.splice(ids.indexOf(id), 1);
+    out.push(genPack(id));
+  }
+  return out;
+}
 
 // Descuento según cuántas camisetas eliges del lote (n) y cuántas tiene el lote (total)
 const packDiscount = (src, n, total) => (n < 2 ? 0 : Math.min(src.max, src.step * (n - 1)) + (n === total ? src.full : 0));
@@ -598,7 +666,7 @@ function renderPacks() {
        <p class="sub">Compra varias camisetas de golpe y ahorra: cuantas más te lleves, mayor es el descuento.</p>
        <div class="pack-grid">${packs.map(packCard).join('')}</div>
        <h3 class="block-title">🛍️ Ofertas sueltas</h3>`
-    : '';
+    : '<p class="sub">Hoy no hay lotes en el mercado. Mañana puede haber más, o prueba con «Buscar más».</p>';
 }
 
 function fameBarHTML(f) {
