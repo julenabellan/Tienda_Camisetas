@@ -442,11 +442,93 @@
       <div class="showcase-grid">${tiles}${empty}</div>`;
   }
 
-  function renderShop() {
-    renderShop();
+  // ---------- Acciones del escaparate y el orden ----------
+  function toggleFeature(uid) {
+    uid = Number(uid);
+    if (S.featured.includes(uid)) {
+      S.featured = S.featured.filter(x => x !== uid);
+    } else {
+      if (featuredItems().length >= maxFeatured()) { toast(`El escaparate está lleno (${maxFeatured()}). Amplía la tienda para destacar más.`); return; }
+      S.featured.push(uid);
+    }
+    save(); renderAll();
+  }
 
+  function moveItem(uid, dir) {
+    uid = Number(uid);
+    dir = Number(dir);
+    if (S.featured.includes(uid)) {
+      const i = S.featured.indexOf(uid);
+      const j = i + dir;
+      if (j < 0 || j >= S.featured.length) return;
+      [S.featured[i], S.featured[j]] = [S.featured[j], S.featured[i]];
+    } else {
+      // se mueve entre las camisetas que no están en el escaparate
+      const shelf = S.stock.filter(x => !S.featured.includes(x.uid));
+      const i = shelf.findIndex(x => x.uid === uid);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= shelf.length) return;
+      const a = S.stock.indexOf(shelf[i]);
+      const b = S.stock.indexOf(shelf[j]);
+      [S.stock[a], S.stock[b]] = [S.stock[b], S.stock[a]];
+    }
+    save(); renderAll();
+  }
+
+  // ---------- Render ----------
+  function renderHeader() {
+    $('#st-day').textContent = S.day;
+    $('#st-money').textContent = fmt(S.money);
+    $('#st-rep').textContent = S.rep;
+    $('#st-level').textContent = level();
+    const nw = netWorth();
+    $('#goal-fill').style.width = clamp(nw / GOAL * 100, 0, 100) + '%';
+    $('#goal-text').textContent = `Patrimonio ${fmt(nw)} / ${fmt(GOAL)}`;
+  }
+
+  const MSORTS = [['ganga', 'Mejores gangas'], ['price', 'Más baratas'], ['rare', 'Más raras'], ['need', 'Talla que me falta']];
+
+  function renderMarket() {
+    const opts = MSORTS.map(([v, l]) => `<option value="${v}"${S.marketSort === v ? ' selected' : ''}>${l}</option>`).join('');
+    $('#market-tools').innerHTML = `<div class="tool-row"><label>Ordenar <select data-msort>${opts}</select></label></div>`;
+    const deal = o => o.ask / Math.max(1, estimate(o.item).mid);
+    const fns = {
+      ganga: (a, b) => deal(a) - deal(b),
+      price: (a, b) => a.ask - b.ask,
+      rare: (a, b) => kitOf(b.item).rarity - kitOf(a.item).rarity,
+      need: (a, b) => sizeCount(a.item.size) - sizeCount(b.item.size),
+    };
+    const offers = [...S.market].sort(fns[S.marketSort] || fns.ganga);
+    $('#market-grid').innerHTML = offers.length
+      ? offers.map(marketCard).join('')
+      : '<p class="empty">No quedan ofertas hoy. Pulsa «Buscar más».</p>';
     $('#btn-refresh').textContent = `Buscar más (${fmt(REFRESH_COST)})`;
+  }
 
+  function renderShop() {
+    $('#shop-cap').textContent = `${S.stock.length}/${S.shelfCap} perchas ocupadas`;
+    $('#btn-upgrade').textContent = `Ampliar (${fmt(upgradeCost())})`;
+    $('#shop-showcase').innerHTML = showcaseHTML();
+    $('#shop-tools').innerHTML = shopToolsHTML();
+
+    const items = shelfItems();
+    const compact = S.view.mode === 'compact';
+    const manual = S.view.sort === 'manual' && S.view.filter === 'all';
+    const pos = i => (manual ? { first: i === 0, last: i === items.length - 1 } : null);
+    $('#shelf-title').textContent = `📦 Almacén (${items.length})`;
+
+    const grid = $('#shop-grid');
+    grid.className = compact ? 'rows' : 'grid';
+    if (!S.stock.length) {
+      grid.innerHTML = '<p class="empty">No tienes camisetas. Compra alguna en el Mercado.</p>';
+    } else if (!items.length) {
+      grid.innerHTML = '<p class="empty">No hay camisetas con este filtro.</p>';
+    } else {
+      grid.innerHTML = items.map((it, i) => (compact ? shopRow(it, pos(i)) : shopCard(it, pos(i)))).join('');
+    }
+  }
+
+  function renderPanel() {
     const nextLevel = LEVEL_XP[level()];
     $('#panel-stats').innerHTML = `
       <div><i>👕</i><small>Camisetas vendidas</small><b>${S.stats.sold}</b></div>
@@ -466,6 +548,16 @@
       return `<li class="${up ? 'up' : 'down'}"><span class="arrow">${up ? '▲' : '▼'}</span><b>${name}</b><em>${up ? '+' : ''}${Math.round((t.mult - 1) * 100)} %</em><small>${t.left} d</small></li>`;
     });
     $('#trend-list').innerHTML = rows.length ? rows.join('') : '<li>Sin tendencias activas.</li>';
+  }
+
+  function renderAll() {
+    // limpia del escaparate lo que ya no está en stock o no cabe
+    S.featured = S.featured.filter(uid => S.stock.some(i => i.uid === uid)).slice(0, maxFeatured());
+    svgCount = 0;
+    renderHeader();
+    renderMarket();
+    renderShop();
+    renderPanel();
   }
 
   // ---------- Avisos y diálogos ----------
