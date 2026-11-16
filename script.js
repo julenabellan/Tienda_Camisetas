@@ -366,6 +366,8 @@
         break;
       case 'hoops':
         for (let y = 24; y < 190; y += 26) pat += `<rect x="0" y="${y}" width="200" height="13" fill="${c2}"/>`;
+        // en las de Adidas, igual que con rayas verticales: mangas lisas (color base) y las 3 rayas de la marca en el otro color
+        if (kit.brand === 'Adidas') pat += `<rect x="0" y="0" width="52" height="100" fill="${c1}"/><rect x="148" y="0" width="52" height="100" fill="${c1}"/>`;
         break;
       case 'halves':
         pat = `<rect x="0" y="0" width="100" height="200" fill="${c2}"/>`;
@@ -516,17 +518,33 @@
 
   const sizeCount = z => S.stock.filter(i => i.size === z).length;
 
+  // Tarjeta del mercado: menos datos y más visual (rareza y precio sobre la camiseta, vendedor como pie)
   function marketCard(o) {
     const it = o.item;
+    const kit = kitOf(it);
     const s = SELLERS[o.seller];
     const est = estimate(it);
     const ganga = o.ask <= est.mid * 0.6;
+    const flags = [
+      it.special ? '<span class="signed">Firmada</span>' : '',
+      ganga ? '<span class="deal">🔥 Posible ganga</span>' : '',
+      sizeCount(it.size) === 0 ? `<span class="deal need">🧩 Te falta la ${it.size}</span>` : '',
+    ].join('');
     return `
-      <article class="card r${kitOf(it).rarity}" data-offer="${o.id}">
-        ${itemHead(it)}
-        <p class="seller">${s.emoji} ${o.name} · ${s.label}</p>
-        <div class="price-tag" aria-label="Precio pedido"><small>Pide</small>${fmt(o.ask)}</div>
-        <div class="badges">${ganga ? '<span class="deal">Posible ganga</span>' : ''}${sizeCount(it.size) === 0 ? `<span class="deal need">🧩 Te falta la ${it.size}</span>` : ''}</div>
+      <article class="card mcard r${kit.rarity}" data-offer="${o.id}">
+        <div class="thumb mc-thumb">
+          ${kitImage(kit)}
+          <span class="mc-stars" title="${RARITY_LABELS[kit.rarity]}">${stars(kit.rarity)}</span>
+          <div class="price-tag" aria-label="Precio pedido"><small>Pide</small>${fmt(o.ask)}</div>
+          ${flags ? `<div class="mc-flags">${flags}</div>` : ''}
+        </div>
+        <div class="mc-body">
+          <h3>${kit.team} ${kit.year}</h3>
+          <p class="mc-sub">${kit.type} · ${kit.brand}</p>
+          <div class="mc-pills"><span class="chip size">${it.size}</span><span class="chip">${COND_SHORT[it.cond] || COND[it.cond].label}</span>${authChip(it)}${trendChip(kit)}</div>
+          <p class="mc-est">Valoración <b>${estimateText(it)}</b></p>
+        </div>
+        <div class="mc-seller"><span class="mc-avatar">${s.emoji}</span><span class="mc-who"><b>${o.name}</b><small>${s.label}</small></span></div>
         <div class="actions">
           <button class="btn" data-action="negotiate" data-id="${o.id}">Negociar</button>
           <button class="btn primary" data-action="buy" data-id="${o.id}">Comprar</button>
@@ -657,7 +675,7 @@
   function showcaseHTML() {
     const items = featuredItems();
     const slots = maxFeatured();
-    const tiles = items.map((it, i) => shopTile(it, { first: i === 0, last: i === items.length - 1 }, i === 0 && items.length > 1)).join('');
+    const tiles = items.map((it, i) => shopTile(it, { first: i === 0, last: i === items.length - 1 }, false)).join('');
     const free = Math.max(0, slots - items.length);
     const empty = '<div class="slot"><span>👕</span><b>Hueco libre</b><small>Pulsa la ★ de una camiseta del almacén para exponerla aquí</small></div>'.repeat(free);
     const value = items.reduce((s, it) => s + it.listPrice, 0);
