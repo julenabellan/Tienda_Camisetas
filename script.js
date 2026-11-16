@@ -22,6 +22,30 @@
   ];
   const COND = Object.fromEntries(CONDITIONS.map(c => [c.id, c]));
 
+  // ---------- Packs y lotes ----------
+  // Cada fuente vende lotes con descuento por cantidad:
+  //   step = rebaja por cada camiseta extra · max = tope por cantidad · full = extra si te llevas el lote entero
+  //   ask = precio pedido respecto al valor real · real = prob. de que sean auténticas · cond = pesos de estado
+  const PACK_SOURCES = {
+    tienda: {
+      icon: '🏬', label: 'Tienda', names: ['Retro Mayorista', 'Distribuciones Gol', 'Almacén Fútbol', 'Textil Deportivo Norte', 'Camisetas al por mayor'],
+      size: [3, 5], ask: [0.95, 1.1], step: 0.05, max: 0.2, full: 0.05, real: 0.98, boost: 0,
+      cond: { nueva: 30, excelente: 45, buena: 25, usada: 0 },
+      desc: 'Precio fijo y género fiable. Cuantas más compres, más descuento.', tag: '✔ Género fiable', tagCls: 'good',
+    },
+    outlet: {
+      icon: '🏷️', label: 'Outlet', names: ['Outlet Fin de Temporada', 'Outlet Gol Express', 'Liquidaciones Retro', 'Outlet La Grada'],
+      size: [4, 6], ask: [0.8, 0.95], step: 0.06, max: 0.3, full: 0.05, real: 0.8, boost: 0.1,
+      cond: { nueva: 10, excelente: 20, buena: 40, usada: 30 },
+      desc: 'Descuentos enormes, pero hay piezas gastadas y riesgo de réplicas.', tag: '⚠️ Riesgo de réplicas', tagCls: 'warn',
+    },
+    particular: {
+      icon: '🧑', label: 'Particular', names: null,
+      size: [2, 3], ask: [0.85, 1], step: 0.1, max: 0.2, full: 0.05, real: null, boost: 0, cond: null,
+      desc: 'Un coleccionista vende varias a la vez: si te llevas más de una, te rebaja.', tag: '🤝 Trato personal', tagCls: 'cold',
+    },
+  };
+
   let S = null;       // estado del juego
   let svgCount = 0;
 
@@ -58,6 +82,7 @@
       featured: [], view: { filter: 'all', sort: 'manual', mode: 'cards', v3: true }, marketSort: 'ganga', sizeLost: {},
     };
     S.market = genMarket();
+    S.packs = genPacks();
     S.news.unshift({ day: 1, text: 'Abres la tienda. Compra barato, vende bien y cuida tu reputación.' });
     return S;
   }
@@ -194,6 +219,38 @@
   function genMarket() {
     const n = clamp(6 + Math.floor(S.rep / 30), 6, 10);
     return Array.from({ length: n }, genOffer);
+  }
+
+  function genPackItem(src) {
+    const it = genItem();
+    if (src.cond) it.cond = weighted(CONDITIONS.filter(c => src.cond[c.id] > 0), c => src.cond[c.id]).id;
+    if (src.real != null) it.real = Math.random() < src.real - (S.fakeBoost > 0 ? src.boost : 0);
+    return it;
+  }
+
+  function genPack(srcId) {
+    const src = PACK_SOURCES[srcId];
+    const n = randInt(src.size[0], src.size[1]);
+    const items = Array.from({ length: n }, () => {
+      const item = genPackItem(src);
+      return { item, price: Math.max(3, nice(valueIfReal(item) * rand(src.ask[0], src.ask[1]))) };
+    });
+    return { id: S.nextOffer++, src: srcId, name: src.names ? pick(src.names) : pick(NAMES), items };
+  }
+
+  function genPacks() { return Object.keys(PACK_SOURCES).map(genPack); }
+
+  // Descuento según cuántas camisetas eliges del lote (n) y cuántas tiene el lote (total)
+  const packDiscount = (src, n, total) => (n < 2 ? 0 : Math.min(src.max, src.step * (n - 1)) + (n === total ? src.full : 0));
+
+  function packQuote(pack, sel) {
+    const src = PACK_SOURCES[pack.src];
+    const chosen = pack.items.filter(x => sel.has(x.item.uid));
+    const d = packDiscount(src, chosen.length, pack.items.length);
+    const lines = chosen.map(x => ({ ...x, pay: Math.max(2, Math.round(x.price * (1 - d))) }));
+    const full = chosen.reduce((a, x) => a + x.price, 0);
+    const total = lines.reduce((a, x) => a + x.pay, 0);
+    return { chosen: lines, d, full, total, saved: full - total };
   }
 
   // ---------- Dibujo de camisetas ----------
@@ -469,7 +526,7 @@
   }, true);
 
   // ---------- Plantillas ----------
-  function stars(r) { return '★'.repeat(r) + '☆'.repeat(4 - r); }
+  function stars(r) { return `<span class="stars" aria-label="${r} de 4 estrellas"><b>${'★'.repeat(r)}</b><i>${'★'.repeat(4 - r)}</i></span>`; }
 
   function eraLabel(kit) { return kit.year <= 2000 ? 'Retro' : kit.year <= 2010 ? 'Clásica' : 'Moderna'; }
 
@@ -771,8 +828,41 @@
     $('#market-grid').innerHTML = offers.length
       ? offers.map(marketCard).join('')
       : '<p class="empty">No quedan ofertas hoy. Pulsa «Buscar más».</p>';
+    renderPacks();
     $('#btn-refresh').textContent = `Buscar más (${fmt(REFRESH_COST)})`;
     $('#market-sub').textContent = `${offers.length} ${offers.length === 1 ? 'oferta' : 'ofertas'} disponibles hoy`;
+  }
+
+  function packCard(p) {
+    const src = PACK_SOURCES[p.src];
+    const q = packQuote(p, new Set(p.items.map(x => x.item.uid)));
+    const thumbs = p.items.map(x => `<span class="pk-th">${kitImage(kitOf(x.item))}</span>`).join('');
+    return `
+      <article class="card pcard">
+        <div class="pk-head"><span class="pk-icon">${src.icon}</span><div><h3>${p.name}</h3><p class="mc-sub">${src.label} · ${p.items.length} camisetas</p></div></div>
+        <div class="pk-thumbs">${thumbs}</div>
+        <div class="mc-pills"><span class="chip hot">Hasta −${Math.round(q.d * 100)} %</span><span class="chip ${src.tagCls}">${src.tag}</span></div>
+        <p class="pk-line">Lote completo <b>${fmt(q.total)}</b> <s>${fmt(q.full)}</s></p>
+        <div class="actions"><button class="btn primary" data-action="pack" data-id="${p.id}">Ver lote</button></div>
+      </article>`;
+  }
+
+  function renderPacks() {
+    let box = $('#pack-section');
+    if (!box) {
+      box = document.createElement('section');
+      box.id = 'pack-section';
+      box.className = 'pack-section';
+      const g = $('#market-grid');
+      g.parentNode.insertBefore(box, g);
+    }
+    const packs = S.packs || [];
+    box.innerHTML = packs.length
+      ? `<h3 class="block-title">📦 Lotes y packs</h3>
+         <p class="sub">Compra varias camisetas de golpe y ahorra: cuantas más te lleves, mayor es el descuento.</p>
+         <div class="pack-grid">${packs.map(packCard).join('')}</div>
+         <h3 class="block-title">🛍️ Ofertas sueltas</h3>`
+      : '';
   }
 
   function fameBarHTML(f) {
@@ -1136,6 +1226,103 @@
     }
   }
 
+  // ---------- Compra de packs ----------
+  function packDialogHTML(pack, sel, msg) {
+    const src = PACK_SOURCES[pack.src];
+    const n = pack.items.length;
+    const q = packQuote(pack, sel);
+    const free = S.shelfCap - S.stock.length;
+    const tiers = [];
+    for (let k = 2; k <= n; k++) tiers.push(`${k === n ? 'Todas' : k} <b>−${Math.round(packDiscount(src, k, n) * 100)} %</b>`);
+    const rows = pack.items.map(x => {
+      const it = x.item, kit = kitOf(it), on = sel.has(it.uid);
+      const line = q.chosen.find(l => l.item.uid === it.uid);
+      const price = on ? `<s>${fmt(x.price)}</s><b>${fmt(line.pay)}</b>` : `<b>${fmt(x.price)}</b>`;
+      const need = sizeCount(it.size) === 0 ? '<span class="chip warn">🧩 Te falta</span>' : '';
+      return `<button class="pk-row${on ? ' on' : ''}" data-choice="toggle:${it.uid}" aria-pressed="${on}">
+        <span class="pk-check">${on ? '✔' : ''}</span>
+        <span class="thumb sm">${kitImage(kit)}</span>
+        <span class="pk-info"><b>${kit.team} ${kit.year}</b>
+          <small>${kit.type} · Talla ${it.size} · ${COND_SHORT[it.cond] || COND[it.cond].label}</small>
+          <small>Valoración ${estimateText(it)}</small>
+          <span class="chips">${authChip(it)}${trendChip(kit)}${need}</span></span>
+        <span class="pk-price">${price}</span>
+      </button>`;
+    }).join('');
+    return `
+      <div class="neg negx packx">
+        <div class="neg-head">
+          <span class="pk-icon">${src.icon}</span>
+          <div><h3>${pack.name}</h3><p class="sub">${src.label} · ${n} ${n === 1 ? 'camiseta' : 'camisetas'}</p></div>
+        </div>
+        <p class="pk-tiers">${src.desc}</p>
+        <p class="pk-tiers">${tiers.length ? `<b>Descuento por cantidad:</b> ${tiers.join(' · ')}` : 'Solo queda una camiseta: sin descuento.'}</p>
+        <div class="pk-list">${rows}</div>
+        <div class="pk-sum"><span><b>${q.chosen.length}</b> elegidas</span><span>Descuento <b>−${Math.round(q.d * 100)} %</b></span><span>Ahorras <b>${fmt(q.saved)}</b></span></div>
+        ${msg ? `<p class="pk-msg">${msg}</p>` : ''}
+        <div class="actions wrap main"><button class="btn primary" data-choice="buy"${q.chosen.length ? '' : ' disabled'}>${q.chosen.length ? `Comprar · ${fmt(q.total)}` : 'Elige camisetas'}</button></div>
+        <div class="actions wrap tactics">
+          <button class="btn sm" data-choice="all">Todas</button>
+          <button class="btn sm" data-choice="none">Ninguna</button>
+          <button class="btn sm ghost" data-choice="leave">Salir</button>
+        </div>
+        <p class="hint">Caja: ${fmt(S.money)} · Perchas libres: ${free}</p>
+      </div>`;
+  }
+
+  async function openPack(packId) {
+    const pack = (S.packs || []).find(p => p.id === packId);
+    if (!pack) return;
+    const sel = new Set();
+    let msg = '';
+    while (true) {
+      const keep = ($('#sheet .pk-list') || {}).scrollTop || 0;   // no saltar al principio de la lista al marcar
+      const pending = dialog(packDialogHTML(pack, sel, msg));
+      const list = $('#sheet .pk-list');
+      if (list) list.scrollTop = keep;
+      const r = await pending;
+      msg = '';
+      const c = r.choice;
+      const free = S.shelfCap - S.stock.length;
+      if (c === 'leave') { closeDialog(); return; }
+      if (c === 'none') { sel.clear(); continue; }
+      if (c === 'all') {
+        sel.clear();
+        pack.items.slice(0, Math.max(0, free)).forEach(x => sel.add(x.item.uid));
+        if (free < pack.items.length) msg = free > 0 ? `Solo tienes ${free} perchas libres.` : 'No te quedan perchas libres. Vende o amplía la tienda.';
+        continue;
+      }
+      if (c.startsWith('toggle:')) {
+        const uid = Number(c.slice(7));
+        if (sel.has(uid)) sel.delete(uid);
+        else if (sel.size >= free) msg = free > 0 ? `Solo tienes ${free} perchas libres.` : 'No te quedan perchas libres. Vende o amplía la tienda.';
+        else sel.add(uid);
+        continue;
+      }
+      if (c === 'buy') {
+        const q = packQuote(pack, sel);
+        if (!q.chosen.length) { msg = 'Elige al menos una camiseta.'; continue; }
+        if (q.total > S.money) { msg = `Te faltan ${fmt(q.total - S.money)} de caja para este pedido.`; continue; }
+        await stamp('¡Lote comprado!', '📦', 'ok', '−' + fmt(q.total));
+        q.chosen.forEach(x => {
+          const it = x.item;
+          it.paid = x.pay;
+          it.listPrice = nice(estimate(it).mid * 1.25);
+          it.since = S.day;
+          S.stock.push(it);
+        });
+        S.money -= q.total;
+        pack.items = pack.items.filter(x => !sel.has(x.item.uid));
+        if (!pack.items.length) S.packs = S.packs.filter(p => p.id !== pack.id);
+        const k = q.chosen.length;
+        log(`Compras ${k} ${k === 1 ? 'camiseta' : 'camisetas'} a «${pack.name}» por ${fmt(q.total)} (ahorras ${fmt(q.saved)}).`);
+        toast(`Compradas ${k} por ${fmt(q.total)} · ahorras ${fmt(q.saved)}`);
+        save(); renderAll();
+        return;
+      }
+    }
+  }
+
   // ---------- Tienda: acciones ----------
   function upgradeCost() { return 150 + 100 * S.upgrades; }
 
@@ -1169,8 +1356,9 @@
     if (S.money < REFRESH_COST) { toast('No tienes caja para buscar más.'); return; }
     S.money -= REFRESH_COST;
     S.market = genMarket();
+    S.packs = genPacks();
     save(); renderAll();
-    toast('Nuevas ofertas en el mercado.');
+    toast('Nuevas ofertas y lotes en el mercado.');
   }
 
   // ---------- Clientes ----------
@@ -1401,6 +1589,7 @@
     }
     startOfDayEvents();
     S.market = genMarket();
+    S.packs = genPacks();
 
     const todayNews = S.news.filter(n => n.day === S.day).map(n => n.text);
 
@@ -1441,6 +1630,7 @@
         <h3>Tu tienda de camisetas</h3>
         <ul>
           <li>Compra camisetas en el <b>Mercado</b>: negocia con cada vendedor.</li>
+          <li>También hay <b>lotes</b> de tiendas, outlets y particulares: si te llevas varias camisetas a la vez, te hacen descuento.</li>
           <li>Las valoraciones son estimaciones. Si dudas, <b>autentica</b>: hay réplicas.</li>
           <li>Fija tu precio en <b>Tienda</b> y pulsa «Abrir tienda» para atender clientes.</li>
           <li>En <b>Tienda</b> pon tus mejores piezas en el escaparate con ⭐ (los clientes las ven antes) y ordénalas con ◀ ▶. Ojo: los clientes piden una talla concreta.</li>
@@ -1481,6 +1671,7 @@
         const o = S.market.find(x => x.id === Number(b.dataset.id));
         if (o) buyItem(o, o.ask);
       }
+      else if (a === 'pack') openPack(Number(b.dataset.id));
       else if (a === 'auth') authStock(b.dataset.uid);
       else if (a === 'filter') { S.view.filter = S.view.filter === b.dataset.f ? 'all' : b.dataset.f; save(); renderAll(); }
       else if (a === 'feature') toggleFeature(b.dataset.uid);
@@ -1510,6 +1701,7 @@
     S = load() || newGame();
     S.busy = false;
     S.featured = S.featured || []; S.sizeLost = S.sizeLost || {};
+    if (!S.packs) S.packs = genPacks();
     if (!S.view || !S.view.v3) S.view = { filter: 'all', sort: 'manual', mode: 'cards', v3: true }; S.marketSort = S.marketSort || 'ganga';
     bind();
     renderAll();

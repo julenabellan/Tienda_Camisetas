@@ -1073,3 +1073,68 @@ main { width: var(--col); max-width: calc(100% - 28px); margin: 12px auto 0; pad
   .slot { min-height: 150px; padding: 6px; }
   .slot small { font-size: .62rem; }
 }
+
+
+/* =====================================================
+   Estrellas de rareza: doradas (antes tomaban el color de la rareza, p. ej. morado)
+   ===================================================== */
+.stars { display: inline-flex; letter-spacing: .06em; }
+.stars b { font-weight: 400; background: linear-gradient(180deg, #fff1a8, #ffc928 55%, #e39b00); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 0 rgba(120,70,0,.35)); }
+.stars i { font-style: normal; color: rgba(159,178,198,.35); }
+.mc-stars { color: #ffc928; background: rgba(13,26,43,.88); box-shadow: 0 0 0 1px rgba(255,201,40,.35); }
+.spec.rar b { color: #b07a00; }
+.spec.rar .stars i { color: #d5dce3; }
+.spec.rar { background: #fffaf0; }
+
+/* =====================================================
+   Lotes y packs (mercado)
+   ===================================================== */
+.pack-section { margin-bottom: 8px; }
+.pack-section .block-title { margin-top: 6px; }
+.pack-section > .sub { color: #9fb2c6; margin-bottom: 12px; }
+.pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 10px; }
+.pcard { border-width: 2px; border-radius: 14px; padding: 11px; gap: 10px; border-top: 4px solid var(--yellow); }
+.pk-head { display: flex; align-items: center; gap: 10px; }
+.pk-head h3 { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.3rem; line-height: 1.1; }
+.pk-icon { flex: none; width: 46px; height: 46px; display: grid; place-items: center; font-size: 1.6rem; background: var(--ink-3); border-radius: 50%; }
+.pk-thumbs { display: flex; gap: 4px; padding: 6px; border-radius: 8px; background: repeating-linear-gradient(90deg, var(--grass-a) 0 28px, var(--grass-b) 28px 56px); }
+.pk-th { flex: 1 1 0; min-width: 0; }
+.pk-th .shirt, .pk-th img { display: block; width: 100%; height: 62px; object-fit: contain; }
+.pk-line { color: var(--muted); font-size: .9rem; }
+.pk-line b { color: var(--text); font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.15rem; }
+.pk-line s { margin-left: 4px; }
+.pcard .actions .btn { flex: 1 1 0; }
+
+/* Diálogo del lote */
+.packx .neg-head { display: flex; }
+.packx .pk-tiers { color: #9fb2c6; font-size: .76rem; line-height: 1.3; }
+.packx .pk-tiers b { color: var(--yellow); font-weight: 700; }
+.pk-list { flex: 1 1 auto; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; scrollbar-width: none; }
+.pk-list::-webkit-scrollbar { display: none; }
+.pk-row {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; padding: 7px; cursor: pointer;
+  border-radius: 12px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.14); color: var(--chalk);
+}
+.pk-row.on { border-color: var(--yellow); background: rgba(244,196,48,.13); }
+.pk-row:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+.pk-check {
+  flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px;
+  border: 2px solid rgba(255,255,255,.35); color: #1a1a1a; font-weight: 900; font-size: .9rem;
+}
+.pk-row.on .pk-check { background: var(--yellow); border-color: var(--yellow); }
+.packx .pk-row .thumb.sm { display: block; flex: none; width: 52px; padding: 3px; border-radius: 8px; }
+.pk-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pk-info b { color: #fff; font-size: .95rem; line-height: 1.1; }
+.pk-info small { color: #9fb2c6; font-size: .72rem; }
+.pk-price { flex: none; display: flex; flex-direction: column; align-items: flex-end; }
+.pk-price b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.1rem; color: #fff; }
+.pk-price s { font-size: .78rem; color: #7f95ab; }
+.pk-sum {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding: 8px 10px; border-radius: 12px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); font-size: .8rem; color: #cfe0ef;
+}
+.pk-sum b { color: var(--yellow); }
+.pk-msg { color: #ffb4a8; font-size: .82rem; text-align: center; }
+@media (max-width: 640px) {
+  .pack-grid { grid-template-columns: 1fr; }
+}
