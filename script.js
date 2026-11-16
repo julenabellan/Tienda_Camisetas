@@ -206,14 +206,56 @@
     return `<path d="M70 20 Q100 44 130 20" fill="none" stroke="${c2}" stroke-width="6" stroke-linecap="round"/>`;
   }
 
-  // Escudo: en las selecciones, un círculo con la bandera (emoji); en los clubes, el círculo de siempre
-  function crestSVG(kit, id) {
+  // Escudo: en las selecciones, la bandera (emoji) directamente sobre la camiseta; en los clubes, el círculo de siempre
+  function crestSVG(kit) {
     if (kit.nat && kit.flag) {
-      return `<clipPath id="${id}f"><circle cx="125" cy="62" r="9.5"/></clipPath>` +
-        `<circle cx="125" cy="62" r="10.5" fill="#fff" stroke="rgba(0,0,0,.45)" stroke-width="1.5"/>` +
-        `<text x="125" y="67.5" font-size="15" text-anchor="middle" clip-path="url(#${id}f)" style="font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${kit.flag}</text>`;
+      return `<text x="125" y="67.5" font-size="17" text-anchor="middle" style="font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${kit.flag}</text>`;
     }
     return `<circle cx="125" cy="62" r="6.5" fill="${kit.c2}" stroke="rgba(0,0,0,.3)"/>`;
+  }
+
+  // ---------- Detalles de marca ----------
+  const lum = hex => { const n = parseInt(hex.slice(1), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+  const inkOn = (bg, pref) => (Math.abs(lum(bg) - lum(pref)) > 0.3 ? pref : (lum(bg) > 0.55 ? '#111111' : '#FFFFFF'));
+
+  // Detalles en mangas y hombros (se dibujan dentro del recorte de la camiseta)
+  function brandTrim(kit) {
+    const onSleeves = kit.pattern === 'sleeves' || kit.pattern === 'yoke';
+    const ink = inkOn(onSleeves ? kit.c2 : kit.c1, onSleeves ? kit.c1 : kit.c2);
+    const X = (x, m) => (m ? 200 - x : x);
+    const sides = fn => fn(false) + fn(true);
+    // rayas del hombro al puño (la manga va de (70,20)-(40,32) a (34,92)-(8,70))
+    const stripes = (ts, w) => sides(m => ts.map(t =>
+      `<line x1="${X(70 - 30 * t, m)}" y1="${20 + 12 * t}" x2="${X(34 - 26 * t, m)}" y2="${92 - 22 * t}" stroke="${ink}" stroke-width="${w}"/>`).join(''));
+    // cinta de rombos junto al puño
+    const tape = (dash, w) => sides(m =>
+      `<line x1="${X(37.7, m)}" y1="86" x2="${X(11.7, m)}" y2="64" stroke="${ink}" stroke-width="${w}" stroke-dasharray="${dash}"/>`);
+    // chevrones apuntando al hombro
+    const chev = (cx, cy, m) => `<polyline points="${X(cx + 5.2, m)},${cy + 6.8} ${X(cx + 1.6, m)},${cy - 2.55} ${X(cx - 8.4, m)},${cy - 1.7}" fill="none" stroke="${ink}" stroke-width="2.2" stroke-linejoin="miter"/>`;
+    switch (kit.brand) {
+      case 'Adidas': return stripes([0.3, 0.5, 0.7], 2.6);
+      case 'Asics': return stripes([0.42, 0.58], 2.4);
+      case 'Umbro': return tape('4.5 2.5', 3.4);
+      case 'Kappa': return tape('2 2', 3);
+      case 'Hummel': return sides(m => chev(42.1, 46.9, m) + chev(35.3, 57.9, m));
+      case 'Puma': return sides(m => `<path d="M${X(57, m)} 25 Q${X(36, m)} 46 ${X(20, m)} 82" fill="none" stroke="${ink}" stroke-width="5"/>`);
+      default: return '';
+    }
+  }
+
+  // Logo de la marca en el pecho (lado derecho del jugador)
+  function brandLogo(kit) {
+    const ink = inkOn(kit.c1, kit.c2);
+    switch (kit.brand) {
+      case 'Adidas': return `<path d="M72 64 L75 60 M76 64 L80 57 M80.5 64 L85.5 54" stroke="${ink}" stroke-width="2.2" stroke-linecap="round"/>`;
+      case 'Nike': return `<path d="M71 59 C75 65 82 64 90 56 C83 60 77 61 71 59 Z" fill="${ink}"/>`;
+      case 'Umbro': return `<path d="M71 61 l4 -4 4 4 -4 4 Z M77 61 l4 -4 4 4 -4 4 Z" fill="${ink}"/>`;
+      case 'Kappa': return `<circle cx="74.5" cy="59.5" r="2.4" fill="${ink}"/><circle cx="81.5" cy="59.5" r="2.4" fill="${ink}"/><rect x="72" y="63" width="12" height="2" rx="1" fill="${ink}"/>`;
+      case 'Puma': return `<path d="M71 64 C74 56 82 53 90 58 C83 57 77 59 71 64 Z" fill="${ink}"/>`;
+      case 'Hummel': return `<path d="M72 64 l5 -5 5 5 M72 59 l5 -5 5 5" fill="none" stroke="${ink}" stroke-width="1.8"/>`;
+      case 'Lotto': return `<path d="M73 56 h10 l-5 10 Z" fill="${ink}"/>`;
+      default: return `<rect x="73" y="58" width="10" height="3" rx="1.5" fill="${kit.c2}"/>`;
+    }
   }
 
   function shirtSVG(kit) {
@@ -260,6 +302,20 @@
               `<polygon points="-10,-10 84,-10 -10,64" fill="${c3}"/><polygon points="116,-10 210,-10 210,40" fill="${c2}" opacity=".9"/>`;
         break;
       }
+      case 'pinstripes':
+        for (let x = 3, i = 0; x < 200; x += 9, i++) pat += `<rect x="${x}" y="0" width="2.4" height="200" fill="${i % 2 ? kit.c3 : c2}"/>`;
+        break;
+      case 'zigband': {
+        let pts = '';
+        for (let x = -10, up = 0; x <= 210; x += 20, up ^= 1) pts += `${x},${98 + (up ? -12 : 12)} `;
+        pat = `<polyline points="${pts}" fill="none" stroke="${kit.c3}" stroke-width="20" stroke-linejoin="miter"/>` +
+              `<polyline points="${pts}" fill="none" stroke="${c2}" stroke-width="13" stroke-linejoin="miter"/>`;
+        break;
+      }
+      case 'vtri':
+        pat = [c2, kit.c3, kit.c4].map((col, i) =>
+          `<polyline points="-10,${64 + i * 13} 100,${132 + i * 13} 210,${64 + i * 13}" fill="none" stroke="${col}" stroke-width="12" stroke-linejoin="miter"/>`).join('');
+        break;
       case 'yoke':
         pat = `<path d="M0 0 H200 V64 L100 96 L0 64 Z" fill="${c2}"/>`;
         break;
@@ -287,12 +343,13 @@
       <g clip-path="url(#${id})">
         <rect width="200" height="200" fill="${c1}"/>
         ${pat}
+        ${brandTrim(kit)}
         <rect width="200" height="200" fill="url(#${id}g)"/>
       </g>
       ${collarSVG(kit)}
       <path d="M8 70 L34 92 M192 70 L166 92" stroke="${c2}" stroke-width="5" stroke-linecap="round"/>
-      ${crestSVG(kit, id)}
-      <rect x="73" y="58" width="10" height="3" rx="1.5" fill="${c2}"/>
+      ${crestSVG(kit)}
+      ${brandLogo(kit)}
       <path d="M52 168 H148 M60 100 Q70 130 62 160 M140 100 Q130 130 138 160" fill="none" stroke="rgba(0,0,0,.14)" stroke-width="3"/>
       <path d="${body}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="2" stroke-linejoin="round"/>
     </svg>`;

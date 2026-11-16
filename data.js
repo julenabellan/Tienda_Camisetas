@@ -5,9 +5,12 @@
 // rellena el campo `img` con una ruta propia (por ejemplo "img/brasil-1970.jpg") o una URL
 // de la que tengas permiso. Si la imagen falla, el juego dibuja la camiseta en SVG.
 //
-// k(equipo, año, equipación, marca, valorBase, rareza 1-4, color1, color2, dibujo, esSelección, c3)
-// dibujo: solid | stripes | hoops | halves | sash | sleeves | band | vband | chevron | zigzag | graphic | yoke | wave | cross | checks
-// c3 (opcional): tercer color para 'graphic' y 'cross'
+// k(equipo, año, equipación, marca, valorBase, rareza 1-4, color1, color2, dibujo, esSelección, c3, c4)
+// dibujo: solid | stripes | pinstripes | hoops | halves | sash | sleeves | band | vband | chevron | zigzag | zigband | vtri | graphic | yoke | wave | cross | checks
+// c3 (opcional): tercer color para 'graphic', 'cross', 'pinstripes', 'zigband' y 'vtri'
+// c4 (opcional): cuarto color, solo para 'vtri'
+// Los detalles de marca (las 3 rayas de Adidas, el swoosh de Nike, los rombos de Umbro...) se dibujan solos según el campo `marca`.
+// Diseños y colores contrastados con la ficha de cada camiseta en Football Kit Archive (campos Design y Colors) cuando se indica «KA».
 // equipación: Local | Visitante | Tercera | Portero | Centenario
 //
 // ORDEN DEL CATÁLOGO: primero las selecciones (A-Z) y luego los clubes por país (A-Z).
@@ -27,16 +30,16 @@ const FLAGS = {
   'Turquía': '🇹🇷', 'Uruguay': '🇺🇾',
 };
 
-function k(team, year, type, brand, base, rarity, c1, c2, pattern, nat, c3) {
+function k(team, year, type, brand, base, rarity, c1, c2, pattern, nat, c3, c4) {
   const id = (team + '-' + year + '-' + type).toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const h = [...id].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   const collar = year <= 1999 ? ['polo', 'v', 'round'][h % 3] : ['round', 'v'][h % 2];
-  return { id, team, year, type, brand, base, rarity, c1, c2, c3: c3 || c2, pattern, collar, nat: !!nat, flag: nat ? (FLAGS[team] || '') : '', img: '' };
+  return { id, team, year, type, brand, base, rarity, c1, c2, c3: c3 || c2, c4: c4 || c3 || c2, pattern, collar, nat: !!nat, flag: nat ? (FLAGS[team] || '') : '', img: '' };
 }
 
 const KITS = [
   // ===== SELECCIONES (47) =====
-  k('Alemania', 1990, 'Local', 'Adidas', 230, 3, '#FFFFFF', '#111111', 'sleeves', true),
+  k('Alemania', 1990, 'Local', 'Adidas', 230, 3, '#FFFFFF', '#111111', 'vtri', true, '#DD0000', '#FFCE00'),   // KA: Graphic
   k('Alemania', 1990, 'Portero', 'Adidas', 130, 3, '#2E8B57', '#111111', 'solid', true),
   k('Alemania', 2006, 'Local', 'Adidas', 240, 4, '#FFFFFF', '#111111', 'graphic', true),
 
@@ -57,8 +60,8 @@ const KITS = [
 
   k('Croacia', 1998, 'Local', 'Lotto', 240, 4, '#FFFFFF', '#D8232A', 'checks', true),
 
-  k('Dinamarca', 1992, 'Local', 'Hummel', 280, 4, '#C60C30', '#FFFFFF', 'solid', true),
-  k('Dinamarca', 1992, 'Visitante', 'Hummel', 230, 4, '#FFFFFF', '#C60C30', 'cross', true),
+  k('Dinamarca', 1992, 'Local', 'Hummel', 280, 4, '#C60C30', '#FFFFFF', 'sleeves', true),   // KA: Graphic
+  k('Dinamarca', 1992, 'Visitante', 'Hummel', 230, 4, '#FFFFFF', '#C60C30', 'pinstripes', true, '#14235E'),   // KA: Stripes
 
   k('Escocia', 1996, 'Local', 'Umbro', 110, 2, '#0B2C6B', '#FFFFFF', 'solid', true),
 
@@ -89,7 +92,7 @@ const KITS = [
   k('Nigeria', 1994, 'Local', 'Nike', 240, 4, '#FFFFFF', '#008751', 'chevron', true),
   k('Nigeria', 1998, 'Local', 'Nike', 200, 3, '#2E9B3F', '#FFFFFF', 'zigzag', true),
 
-  k('Países Bajos', 1988, 'Local', 'Adidas', 260, 4, '#FF6A13', '#FFFFFF', 'solid', true),
+  k('Países Bajos', 1988, 'Local', 'Adidas', 260, 4, '#FF6A13', '#FFFFFF', 'zigband', true),   // KA: Graphic
   k('Países Bajos', 1998, 'Visitante', 'Nike', 180, 3, '#1B4DA6', '#FF6A13', 'solid', true),
   k('Países Bajos', 2004, 'Local', 'Nike', 190, 3, '#FF6A13', '#FFFFFF', 'solid', true),
   k('Países Bajos', 2013, 'Visitante', 'Nike', 95, 1, '#003DA5', '#FF6A13', 'solid', true),
@@ -211,7 +214,7 @@ const KITS = [
   k('Villarreal', 1999, 'Local', 'Joma', 160, 3, '#F7E017', '#111111', 'solid'),
 
   // ===== CLUBES · INGLATERRA (31) =====
-  k('Arsenal', 1991, 'Visitante', 'Adidas', 190, 3, '#F5D000', '#0B2A6B', 'sleeves'),
+  k('Arsenal', 1991, 'Visitante', 'Adidas', 190, 3, '#F5D000', '#0B2A6B', 'graphic', false, '#6B4AA8'),
   k('Arsenal', 1994, 'Portero', 'Adidas', 80, 2, '#E06A1B', '#111111', 'sleeves'),
   k('Arsenal', 2003, 'Local', 'Nike', 240, 4, '#C8102E', '#FFFFFF', 'solid'),
   k('Arsenal', 2012, 'Local', 'Nike', 80, 1, '#C8102E', '#FFFFFF', 'solid'),
