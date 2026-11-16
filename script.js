@@ -208,10 +208,12 @@
 
   // Escudo: en las selecciones, la bandera (emoji) directamente sobre la camiseta; en los clubes, el círculo de siempre
   function crestSVG(kit) {
+    // con rayas, el escudo queda a la misma distancia del centro que el logo, pero en el lado opuesto
+    const cx = kit.pattern === 'stripes' ? 200 - logoSpot(kit).cx : 125;
     if (kit.nat && kit.flag) {
-      return `<text x="125" y="67.5" font-size="17" text-anchor="middle" style="font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${kit.flag}</text>`;
+      return `<text x="${cx}" y="67.5" font-size="17" text-anchor="middle" style="font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${kit.flag}</text>`;
     }
-    return `<circle cx="125" cy="62" r="6.5" fill="${kit.c2}" stroke="rgba(0,0,0,.3)"/>`;
+    return `<circle cx="${cx}" cy="62" r="6.5" fill="${kit.c2}" stroke="rgba(0,0,0,.3)"/>`;
   }
 
   // ---------- Detalles de marca ----------
@@ -266,7 +268,7 @@
 
   // Rayas verticales: ancho de la raya, separación entre el inicio de una y la siguiente, y posición de la primera
   // (hueco de color base centrado en la camiseta; separación mayor = más sitio para el logo)
-  const STRIPE_W = 18, STRIPE_STEP = 32;
+  const STRIPE_W = 18, STRIPE_STEP = 36;
   // Tamaño del logo cuando va sobre una raya: siempre más pequeño que la raya (margen a cada lado)
   const STRIPE_LOGO = STRIPE_W - 3;
   const STRIPE_X0 = 100 - STRIPE_STEP / 2 - STRIPE_W / 2 - STRIPE_STEP * 3; // → hueco de color base justo en el centro (x=100)
