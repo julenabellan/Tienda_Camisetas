@@ -55,7 +55,7 @@
       pendingReturns: [], news: [], nextUid: 1, nextOffer: 1,
       stats: { sold: 0, profit: 0, revenue: 0 },
       goalReached: false, seenIntro: false, over: false,
-      featured: [], view: { filter: 'all', sort: 'recent' }, marketSort: 'ganga', sizeLost: {},
+      featured: [], view: { filter: 'all', sort: 'manual', mode: 'cards', v3: true }, marketSort: 'ganga', sizeLost: {},
     };
     S.market = genMarket();
     S.news.unshift({ day: 1, text: 'Abres la tienda. Compra barato, vende bien y cuida tu reputación.' });
@@ -316,123 +316,134 @@
       </article>`;
   }
 
-  function shopCard(it) {
-    const margin = it.listPrice - it.paid;
-    const star = S.featured.includes(it.uid);
-    const age = S.day - (it.since || S.day);
+  // ---------- Tienda: piezas reutilizables ----------
+  const suggestedPrice = it => nice(estimate(it).mid * 1.2);
+  const maxFeatured = () => FEATURED_BASE + S.upgrades;
+  const itemAge = it => S.day - (it.since || S.day);
+
+  function marginHTML(it) {
+    const m = it.listPrice - it.paid;
+    return `<b class="${m >= 0 ? 'pos' : 'loss'}">${m >= 0 ? '+' : ''}${fmt(m)}</b>`;
+  }
+
+  function starBtn(it, on) {
+    const label = on ? 'Quitar del escaparate' : 'Poner en el escaparate';
+    return `<button class="star${on ? ' on' : ''}" data-action="feature" data-uid="${it.uid}" aria-pressed="${on}" aria-label="${label}" title="${label}">★</button>`;
+  }
+
+  // pos = { first, last } cuando se puede reordenar; null si no
+  function moveBtns(it, pos) {
+    if (!pos) return '';
+    return `<span class="mv">
+      <button data-action="move" data-uid="${it.uid}" data-dir="-1" aria-label="Mover antes"${pos.first ? ' disabled' : ''}>◀</button>
+      <button data-action="move" data-uid="${it.uid}" data-dir="1" aria-label="Mover después"${pos.last ? ' disabled' : ''}>▶</button></span>`;
+  }
+
+  const miniPrice = it => `<button class="price-btn mini" data-action="editprice" data-uid="${it.uid}" aria-label="Cambiar precio"><b>${fmt(it.listPrice)}</b><span>✎</span></button>`;
+  const authBtn = (it, cls = '') => (it.verified ? '' : `<button class="btn ${cls}" data-action="auth" data-uid="${it.uid}">Autenticar (${fmt(AUTH_COST)})</button>`);
+
+  // Tarjeta grande (vista «Tarjetas»)
+  function shopCard(it, pos) {
     return `
-      <article class="card r${kitOf(it).rarity}${star ? ' featured' : ''}" data-uid="${it.uid}">
-        <button class="star${star ? ' on' : ''}" data-action="feature" data-uid="${it.uid}" aria-pressed="${star}" aria-label="Destacar en el escaparate" title="Destacar: los clientes la ven antes">★</button>
+      <article class="card shop-card r${kitOf(it).rarity}" data-uid="${it.uid}">
+        ${starBtn(it, false)}
         ${itemHead(it)}
-        <p class="seller">Pagaste ${fmt(it.paid)} · Margen <b class="${margin >= 0 ? 'pos' : 'neg'}">${margin >= 0 ? '+' : ''}${fmt(margin)}</b> · ${age} d</p>
+        <p class="seller">Pagaste ${fmt(it.paid)} · Margen ${marginHTML(it)} · ${itemAge(it)} d</p>
         <button class="price-btn" data-action="editprice" data-uid="${it.uid}"><small>Tu precio</small><b>${fmt(it.listPrice)}</b><span>✎ Cambiar</span></button>
         <div class="actions">
-          ${it.verified ? '' : `<button class="btn" data-action="auth" data-uid="${it.uid}">Autenticar (${fmt(AUTH_COST)})</button>`}
-          <button class="btn" data-action="suggest" data-uid="${it.uid}">Precio sugerido</button>
+          ${moveBtns(it, pos)}
+          ${authBtn(it)}
+          <button class="btn" data-action="suggest" data-uid="${it.uid}">Sugerido</button>
         </div>
       </article>`;
   }
 
-  // ---------- Organización de la tienda ----------
-  const FILTERS = [['all', 'Todo'], ['star', '⭐ Destacadas'], ['nat', 'Selecciones'], ['club', 'Clubes'], ['gk', 'Porteros'], ['rare', 'Raras'], ['unver', 'Sin verificar']];
-  const maxFeatured = () => FEATURED_BASE + S.upgrades;
-
-  function filterStock() {
-    const f = S.view.filter;
-    const list = S.stock.filter(it => {
-      const k = kitOf(it);
-      if (f === 'nat') return k.nat && k.type !== 'Portero';
-      if (f === 'club') return !k.nat && k.type !== 'Portero';
-      if (f === 'gk') return k.type === 'Portero';
-      if (f === 'rare') return k.rarity >= 3 || it.special;
-      if (f === 'star') return S.featured.includes(it.uid);
-      if (f === 'unver') return !it.verified;
-      if (SIZE_ORDER.includes(f)) return it.size === f;
-      return true;
-    });
-    const by = {
-      recent: (a, b) => b.uid - a.uid,
-      margin: (a, b) => (b.listPrice - b.paid) - (a.listPrice - a.paid),
-      price: (a, b) => b.listPrice - a.listPrice,
-      year: (a, b) => kitOf(a).year - kitOf(b).year,
-      team: (a, b) => title(a).localeCompare(title(b), 'es'),
-      size: (a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size),
-    }[S.view.sort] || (() => 0);
-    return list.sort(by);
+  // Fila compacta (vista «Lista»)
+  function shopRow(it, pos) {
+    const kit = kitOf(it);
+    return `
+      <article class="row r${kit.rarity}" data-uid="${it.uid}">
+        <div class="thumb">${kitImage(kit)}</div>
+        <div class="row-main">
+          <h3>${kit.team} ${kit.year} <small>${kit.type}</small></h3>
+          <div class="chips"><span class="chip size">${it.size}</span><span class="chip">${COND[it.cond].label}</span>${authChip(it)}${trendChip(kit)}</div>
+          <p class="seller">Pagaste ${fmt(it.paid)} · ${marginHTML(it)} · ${itemAge(it)} d</p>
+          ${authBtn(it, 'sm')}
+        </div>
+        <div class="row-side">
+          ${miniPrice(it)}
+          <div class="row-tools">${starBtn(it, false)}${moveBtns(it, pos)}</div>
+        </div>
+      </article>`;
   }
+
+  // Pieza del escaparate
+  function shopTile(it, pos) {
+    const kit = kitOf(it);
+    return `
+      <article class="tile r${kit.rarity}" data-uid="${it.uid}">
+        ${starBtn(it, true)}
+        <div class="thumb">${kitImage(kit)}${it.special ? '<span class="signed">Firmada</span>' : ''}</div>
+        <h3>${kit.team} ${kit.year}</h3>
+        <p class="sub">Talla ${it.size} · ${COND[it.cond].label}</p>
+        ${miniPrice(it)}
+        <div class="tile-foot">${moveBtns(it, pos)}<span class="seller">${marginHTML(it)}</span></div>
+      </article>`;
+  }
+
+  // ---------- Tienda: organización ----------
+  const FILTERS = [['all', 'Todo'], ['nat', 'Selecciones'], ['club', 'Clubes'], ['gk', 'Porteros'], ['rare', 'Raras'], ['unver', 'Sin verificar']];
+  const SORTS = [['manual', 'Mi orden'], ['recent', 'Más recientes'], ['margin', 'Mayor margen'], ['price', 'Mayor precio'], ['year', 'Más antiguas'], ['team', 'Equipo A-Z']];
+
+  const FILTER_TESTS = {
+    nat: it => kitOf(it).nat && kitOf(it).type !== 'Portero',
+    club: it => !kitOf(it).nat && kitOf(it).type !== 'Portero',
+    gk: it => kitOf(it).type === 'Portero',
+    rare: it => kitOf(it).rarity >= 3 || it.special,
+    unver: it => !it.verified,
+  };
+  const SORT_FNS = {
+    manual: () => 0,                                  // respeta el orden del array (el que tú pones)
+    recent: (a, b) => b.uid - a.uid,
+    margin: (a, b) => (b.listPrice - b.paid) - (a.listPrice - a.paid),
+    price: (a, b) => b.listPrice - a.listPrice,
+    year: (a, b) => kitOf(a).year - kitOf(b).year,
+    team: (a, b) => title(a).localeCompare(title(b), 'es'),
+  };
+
+  const featuredItems = () => S.featured.map(uid => S.stock.find(i => i.uid === uid)).filter(Boolean);
+  const shelfItems = () => S.stock
+    .filter(it => !S.featured.includes(it.uid))
+    .filter(FILTER_TESTS[S.view.filter] || (() => true))
+    .sort(SORT_FNS[S.view.sort] || SORT_FNS.manual);
 
   function shopToolsHTML() {
     const chips = FILTERS.map(([f, l]) => `<button class="fchip${S.view.filter === f ? ' on' : ''}" data-action="filter" data-f="${f}">${l}</button>`).join('');
-    const opts = [['recent', 'Más recientes'], ['margin', 'Mayor margen'], ['price', 'Mayor precio'], ['year', 'Más antiguas'], ['team', 'Equipo A-Z'], ['size', 'Talla']]
-      .map(([v, l]) => `<option value="${v}"${S.view.sort === v ? ' selected' : ''}>${l}</option>`).join('');
+    const opts = SORTS.map(([v, l]) => `<option value="${v}"${S.view.sort === v ? ' selected' : ''}>${l}</option>`).join('');
+    const compact = S.view.mode === 'compact';
     return `<div class="fchips">${chips}</div>
-      <div class="tool-row"><label>Ordenar <select data-sort>${opts}</select></label><button class="btn sm" data-action="suggestall">Precio sugerido a todo</button></div>`;
+      <div class="tool-row">
+        <label>Ordenar <select data-sort>${opts}</select></label>
+        <div class="seg" role="group" aria-label="Vista">
+          <button class="${compact ? '' : 'on'}" data-action="mode" data-mode="cards" aria-label="Vista de tarjetas">▦</button>
+          <button class="${compact ? 'on' : ''}" data-action="mode" data-mode="compact" aria-label="Vista de lista">☰</button>
+        </div>
+        <button class="btn sm" data-action="suggestall">Precio sugerido a todo</button>
+      </div>`;
   }
 
-  function sizePanelHTML() {
-    const tot = SIZE_ORDER.reduce((a, z) => a + SIZE_DEMAND[z], 0);
-    return SIZE_ORDER.map(z => {
-      const n = sizeCount(z);
-      const pct = Math.round(SIZE_DEMAND[z] / tot * 100);
-      const lost = S.sizeLost[z] || 0;
-      return `<button class="size-tile${n ? '' : ' empty'}${S.view.filter === z ? ' on' : ''}" data-action="filter" data-f="${z}">
-        <b>${z}</b><span>${n ? n + ' en tienda' : 'Sin stock'}</span><i style="--w:${pct}%"></i><small>Demanda ${pct} %${lost ? ' · ' + lost + ' perdidas' : ''}</small></button>`;
-    }).join('');
+  function showcaseHTML() {
+    const items = featuredItems();
+    const slots = maxFeatured();
+    const tiles = items.map((it, i) => shopTile(it, { first: i === 0, last: i === items.length - 1 })).join('');
+    const free = Math.max(0, slots - items.length);
+    const empty = '<div class="slot"><span>☆</span><small>Hueco libre<br>Destaca una camiseta con ★</small></div>'.repeat(free);
+    return `<div class="showcase-head"><h3>🪟 Escaparate</h3><small>Lo primero que ven los clientes · ${items.length}/${slots}</small></div>
+      <div class="showcase-grid">${tiles}${empty}</div>`;
   }
 
-  function sortedMarket() {
-    const g = o => o.ask / estimate(o.item).mid;
-    const f = {
-      ganga: (a, b) => g(a) - g(b),
-      price: (a, b) => a.ask - b.ask,
-      rare: (a, b) => kitOf(b.item).rarity - kitOf(a.item).rarity,
-      need: (a, b) => sizeCount(a.item.size) - sizeCount(b.item.size),
-    }[S.marketSort] || (() => 0);
-    return S.market.slice().sort(f);
-  }
-
-  function marketToolsHTML() {
-    const opts = [['ganga', 'Mejor ganga'], ['price', 'Más baratas'], ['rare', 'Más raras'], ['need', 'Tallas que me faltan']]
-      .map(([v, l]) => `<option value="${v}"${S.marketSort === v ? ' selected' : ''}>${l}</option>`).join('');
-    return `<div class="tool-row"><label>Ordenar <select data-msort>${opts}</select></label></div>`;
-  }
-
-  function toggleFeature(uid) {
-    uid = Number(uid);
-    if (S.featured.includes(uid)) S.featured = S.featured.filter(u => u !== uid);
-    else if (S.featured.length >= maxFeatured()) { toast(`Máximo ${maxFeatured()} destacadas. Amplía la tienda para más.`); return; }
-    else S.featured.push(uid);
-    save(); renderAll();
-  }
-
-  // ---------- Render ----------
-  function renderAll() {
-    $('#st-day').textContent = S.day;
-    const money = $('#st-money'), mt = fmt(S.money);
-    if (money.textContent !== mt) { money.textContent = mt; money.classList.remove('tick'); void money.offsetWidth; money.classList.add('tick'); }
-    $('#st-rep').textContent = Math.round(S.rep);
-    $('#st-level').textContent = level();
-    const nw = netWorth();
-    $('#goal-fill').style.width = clamp((nw / GOAL) * 100, 0, 100) + '%';
-    $('#goal-text').textContent = `Patrimonio ${fmt(nw)} de ${fmt(GOAL)}`;
-
-    $('#market-tools').innerHTML = marketToolsHTML();
-    $('#market-grid').innerHTML = S.market.length
-      ? sortedMarket().map(marketCard).join('')
-      : '<p class="empty">No quedan ofertas hoy. Busca más o cierra el día.</p>';
-
-    $('#shop-cap').textContent = `${S.stock.length} de ${S.shelfCap} perchas · ⭐ ${S.featured.length}/${maxFeatured()} destacadas`;
-    $('#btn-upgrade').textContent = `Ampliar +6 perchas (${fmt(upgradeCost())})`;
-    $('#size-panel').innerHTML = sizePanelHTML();
-    const missing = SIZE_ORDER.filter(z => sizeCount(z) === 0);
-    $('#size-hint').textContent = !S.stock.length ? ''
-      : missing.length ? `Sin stock de ${missing.join(', ')}. Se piden menos, pero quien llega buscándola y no la encuentra se va sin comprar.`
-      : 'Tienes todas las tallas cubiertas.';
-    $('#shop-tools').innerHTML = shopToolsHTML();
-    const shown = filterStock();
-    $('#shop-grid').innerHTML = !S.stock.length
-      ? '<p class="empty">El escaparate está vacío. Compra camisetas en el Mercado.</p>'
-      : shown.length ? shown.map(shopCard).join('') : '<p class="empty">Ninguna camiseta con este filtro.</p>';
+  function renderShop() {
+    renderShop();
 
     $('#btn-refresh').textContent = `Buscar más (${fmt(REFRESH_COST)})`;
 
@@ -476,10 +487,26 @@
       sheet.onclick = e => {
         const f = e.target.closest('[data-fill]');
         if (f) { editField(sheet, () => Math.round(Number(f.dataset.fill) * Number(f.dataset.base))); return; }
+        const ty = e.target.closest('[data-typing]');
+        if (ty) {
+          const n = ty.closest('.neg');
+          if (n) {
+            const on = ty.dataset.typing === 'on';
+            n.classList.toggle('typing', on);
+            if (on) n.dataset.fresh = '1'; else delete n.dataset.fresh;
+          }
+          return;
+        }
         const kp = e.target.closest('[data-key]');
         if (kp) {
           const k = kp.dataset.key;
-          editField(sheet, v => (k === 'del' ? v.slice(0, -1) : k === 'clr' ? '' : v.length < 5 ? (v + k).replace(/^0+(?=[0-9])/, '') : v));
+          const neg = kp.closest('.neg');
+          const fresh = !!neg && neg.dataset.fresh === '1';   // el primer dígito sustituye el precio
+          if (neg) delete neg.dataset.fresh;
+          editField(sheet, v => {
+            if (fresh && k !== 'del' && k !== 'clr') v = '';
+            return k === 'del' ? v.slice(0, -1) : k === 'clr' ? '' : v.length < 5 ? (v + k).replace(/^0+(?=[0-9])/, '') : v;
+          });
           return;
         }
         const st = e.target.closest('[data-step]');
@@ -556,14 +583,15 @@
     return `<div class="keypad" role="group" aria-label="Teclado numérico">${keys}
       <button class="key alt" data-key="clr" aria-label="Borrar todo">C</button>
       <button class="key" data-key="0">0</button>
-      <button class="key alt" data-key="del" aria-label="Borrar un dígito">⌫</button></div>`;
+      <button class="key alt" data-key="del" aria-label="Borrar un dígito">⌫</button>
+      <button class="key done" data-typing="off">Listo</button></div>`;
   }
 
   function fieldHTML(label, value) {
-    return `<div class="price-field"><small>${label}</small>
+    return `<div class="price-field"><small>${label} · toca el precio para escribir</small>
       <div class="pf-row">
         <button class="step" data-step="-5" aria-label="Restar 5 euros">−5</button>
-        <div class="pf-box"><input id="sheet-input" readonly inputmode="none" tabindex="-1" aria-label="${label}" value="${value}"><span>€</span></div>
+        <div class="pf-box" data-typing="on" role="button" tabindex="0" aria-label="Escribir ${label}"><b class="pf-pen">✎</b><input id="sheet-input" readonly inputmode="none" tabindex="-1" aria-label="${label}" value="${value}"><span>€</span></div>
         <button class="step" data-step="5" aria-label="Sumar 5 euros">+5</button>
       </div></div>`;
   }
@@ -590,16 +618,16 @@
   async function editPrice(uid) {
     const it = S.stock.find(x => x.uid === Number(uid));
     if (!it || S.busy) return;
-    const est = estimate(it), sug = nice(est.mid * 1.2);
+    const est = estimate(it), sug = suggestedPrice(it);
     const max = Math.max(it.listPrice, est.high, it.paid, sug) * 1.3;
-    const r = await dialog(`<div class="neg">
+    const r = await dialog(`<div class="neg negx">
       <div class="neg-head"><div class="thumb sm">${kitImage(kitOf(it))}</div>
         <div><h3>${title(it)} · ${kitOf(it).type}</h3><p class="sub">Talla ${it.size} · ${COND[it.cond].label}</p><p class="est">Valoración: <b>${estimateText(it)}</b></p></div></div>
       ${trackHTML(max, est, [{ cls: 'cost', label: 'Pagaste', v: it.paid }, { id: 'pin-you', cls: 'you', label: 'Tu precio', v: it.listPrice }])}
       ${fieldHTML('Tu precio', it.listPrice)}
       <div class="fchips"><button class="fchip" data-fill="1" data-base="${sug}">Sugerido ${fmt(sug)}</button><button class="fchip" data-fill="1.15" data-base="${it.paid}">Coste +15 %</button><button class="fchip" data-fill="1.3" data-base="${it.paid}">Coste +30 %</button></div>
       ${keypadHTML()}
-      <div class="actions wrap"><button class="btn primary" data-choice="save">Guardar precio</button><button class="btn ghost" data-choice="cancel">Cancelar</button></div></div>`);
+      <div class="actions wrap main"><button class="btn primary" data-choice="save">Guardar precio</button><button class="btn ghost" data-choice="cancel">Cancelar</button></div></div>`);
     closeDialog();
     if (r.choice === 'save' && r.value > 0) { it.listPrice = Math.round(r.value); save(); renderAll(); }
   }
@@ -615,7 +643,7 @@
     const quick = [0.5, 0.65, 0.8].map(p => `<button class="fchip" data-fill="${p}" data-base="${offer.ask}">${Math.round(p * 100)} %</button>`).join('');
     const heat = offer.heat === undefined ? '' : `<div class="thermo" title="Lo cerca que estás del trato"><span>❄️</span><div><i style="left:${Math.round(offer.heat * 100)}%"></i></div><span>🔥</span></div>`;
     return `
-      <div class="neg">
+      <div class="neg negx">
         <div class="neg-head">
           <div class="thumb sm">${kitImage(kitOf(it))}</div>
           <div>
@@ -633,7 +661,7 @@
         ${fieldHTML('Tu oferta', start)}
         <div class="fchips">Atajos: ${quick}</div>
         ${keypadHTML()}
-        <div class="actions wrap">
+        <div class="actions wrap main">
           <button class="btn primary" data-choice="offer">Ofrecer</button>
           <button class="btn" data-choice="accept">Pagar ${fmt(offer.ask)}</button>
         </div>
@@ -643,7 +671,7 @@
           ${it.verified ? '' : `<button class="btn sm" data-choice="auth">Autenticar (${fmt(AUTH_COST)})</button>`}
           <button class="btn sm ghost" data-choice="leave">Irme</button>
         </div>
-        <p class="hint">Caja: ${fmt(S.money)} · Las tácticas solo se usan una vez; si fallan, el vendedor pierde paciencia.</p>
+        <p class="hint">Caja: ${fmt(S.money)} · Cada táctica solo se usa una vez</p>
       </div>`;
   }
 
@@ -833,7 +861,7 @@
     if (!final) pins.push({ id: 'pin-you', cls: 'you', label: 'Contraoferta', v: start });
     const profit = offer - it.paid;
     return `
-      <div class="neg">
+      <div class="neg negx">
         <div class="neg-head">
           <div class="thumb sm">${kitImage(kitOf(it))}</div>
           <div>
@@ -852,7 +880,7 @@
         ${final ? '' : `${fieldHTML('Tu contraoferta', start)}
         <div class="fchips">Atajos: <button class="fchip" data-fill="1" data-base="${listPrice}">Mi precio</button><button class="fchip" data-fill="1" data-base="${start}">Mitad</button><button class="fchip" data-fill="1" data-base="${offer + 5}">Su oferta +5</button></div>
         ${keypadHTML()}`}
-        <div class="actions wrap">
+        <div class="actions wrap main">
           <button class="btn primary" data-choice="accept">Aceptar ${fmt(offer)}</button>
           ${final ? '' : '<button class="btn" data-choice="counter">Contraofertar</button>'}
           <button class="btn ghost" data-choice="reject">Rechazar</button>
@@ -1010,7 +1038,7 @@
           <li>Compra camisetas en el <b>Mercado</b>: negocia con cada vendedor.</li>
           <li>Las valoraciones son estimaciones. Si dudas, <b>autentica</b>: hay réplicas.</li>
           <li>Fija tu precio en <b>Tienda</b> y pulsa «Abrir tienda» para atender clientes.</li>
-          <li>Ten <b>todas las tallas</b>: M y L se piden más, pero quien busca una XL y no la encuentra se va. Destaca con ⭐ tus mejores piezas.</li>
+          <li>En <b>Tienda</b> pon tus mejores piezas en el escaparate con ⭐ (los clientes las ven antes) y ordénalas con ◀ ▶. Ojo: los clientes piden una talla concreta.</li>
           <li>Cada día pagas ${fmt(RENT)} de alquiler. Objetivo: ${fmt(GOAL)} de patrimonio.</li>
         </ul>
         <div class="actions"><button class="btn primary" data-choice="ok">Empezar</button></div>
@@ -1051,11 +1079,13 @@
       else if (a === 'auth') authStock(b.dataset.uid);
       else if (a === 'filter') { S.view.filter = S.view.filter === b.dataset.f ? 'all' : b.dataset.f; save(); renderAll(); }
       else if (a === 'feature') toggleFeature(b.dataset.uid);
+      else if (a === 'move') moveItem(b.dataset.uid, b.dataset.dir);
+      else if (a === 'mode') { S.view.mode = b.dataset.mode; save(); renderAll(); }
       else if (a === 'editprice') editPrice(b.dataset.uid);
-      else if (a === 'suggestall') { S.stock.forEach(it => { it.listPrice = nice(estimate(it).mid * 1.2); }); save(); renderAll(); toast('Precios sugeridos aplicados a todo.'); }
+      else if (a === 'suggestall') { S.stock.forEach(it => { it.listPrice = suggestedPrice(it); }); save(); renderAll(); toast('Precios sugeridos aplicados a todo.'); }
       else if (a === 'suggest') {
         const it = S.stock.find(x => x.uid === Number(b.dataset.uid));
-        if (it) { it.listPrice = nice(estimate(it).mid * 1.2); save(); renderAll(); }
+        if (it) { it.listPrice = suggestedPrice(it); save(); renderAll(); }
       }
     });
 
@@ -1063,13 +1093,6 @@
       const t = e.target;
       if (t.matches('select[data-sort]')) { S.view.sort = t.value; save(); renderAll(); return; }
       if (t.matches('select[data-msort]')) { S.marketSort = t.value; save(); renderAll(); return; }
-      if (t.matches('input[data-action="setprice"]')) {
-        const it = S.stock.find(x => x.uid === Number(t.dataset.uid));
-        if (!it) return;
-        const v = Math.round(Number(t.value));
-        it.listPrice = v > 0 ? v : it.listPrice;
-        save(); renderAll();
-      }
     });
 
     $('#btn-refresh').addEventListener('click', refreshMarket);
@@ -1082,7 +1105,7 @@
     S = load() || newGame();
     S.busy = false;
     S.featured = S.featured || []; S.sizeLost = S.sizeLost || {};
-    S.view = S.view || { filter: 'all', sort: 'recent' }; S.marketSort = S.marketSort || 'ganga';
+    if (!S.view || !S.view.v3) S.view = { filter: 'all', sort: 'manual', mode: 'cards', v3: true }; S.marketSort = S.marketSort || 'ganga';
     bind();
     renderAll();
     if (!S.seenIntro) intro();
