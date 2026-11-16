@@ -250,7 +250,7 @@
     const y = kit.year;
     switch (kit.brand) {
       case 'Adidas': return 'Logos/' + (y < 1990 ? 'Adidas2' : y <= 2023 ? 'Adidas' : 'Adidas3') + '.png';
-      case 'Nike': return 'Logos/' + (y <= 1999 ? 'Nike2' : 'Nike') + '.png';
+      case 'Nike': return 'Logos/' + (y < 1990 ? 'Nike2' : 'Nike') + '.png';
       case 'Puma': return 'Logos/Puma.png';
       case 'Umbro': return 'Logos/Umbro.png';
       case 'Kappa': return 'Logos/' + (y <= 2006 ? 'Kappa' : 'Kappa1') + '.png';
