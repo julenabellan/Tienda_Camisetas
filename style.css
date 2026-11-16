@@ -825,3 +825,180 @@ main { width: var(--col); max-width: calc(100% - 28px); margin: 12px auto 0; pad
   #market-grid { grid-template-columns: 1fr; }
   #market-grid .thumb { height: 170px; }
 }
+
+
+/* =====================================================
+   Tienda v4: escaparate con toldo, focos y piezas estrella
+   ===================================================== */
+.r1 { --rc: #7d92a6; --glow: rgba(125,146,166,.40); }
+.r2 { --rc: #4f86c6; --glow: rgba(79,134,198,.50); }
+.r3 { --rc: #9b5fc8; --glow: rgba(155,95,200,.55); }
+.r4 { --rc: #e0b020; --glow: rgba(224,176,32,.60); }
+
+/* Cinta de rareza (tarjetas y escaparate) */
+.rar-tag {
+  position: absolute; right: 8px; top: 8px; z-index: 2;
+  padding: 2px 9px; border-radius: 999px; color: #fff; background: var(--rc, #7d92a6);
+  font-size: .66rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.rar-tag.r4 { color: #3a2a00; background: linear-gradient(180deg, #ffe27a, #e0b020); }
+
+/* ----- Marco del escaparate ----- */
+.showcase { padding: 0; border: 0; background: none; box-shadow: none; overflow: visible; }
+.showcase::before { display: none; }
+
+.sc-awning {
+  position: relative; height: 34px; border-radius: 14px 14px 0 0;
+  background: repeating-linear-gradient(90deg, var(--red) 0 28px, #fff 28px 56px);
+  box-shadow: 0 3px 0 rgba(0,0,0,.25);
+}
+.sc-awning::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px;
+  background:
+    radial-gradient(circle at 14px 0, var(--red) 13px, transparent 14px) 0 0 / 56px 10px repeat-x,
+    radial-gradient(circle at 42px 0, #fff 13px, transparent 14px) 0 0 / 56px 10px repeat-x;
+  filter: drop-shadow(0 2px 1px rgba(0,0,0,.25));
+}
+
+.sc-window {
+  position: relative; overflow: hidden; margin-bottom: 14px; padding: 22px 12px 0;
+  border: 3px solid #5f4527; border-top: 0; border-radius: 0 0 14px 14px;
+  color: var(--chalk);
+  background:
+    radial-gradient(420px 220px at 50% 0, rgba(80,140,210,.38), transparent 70%),
+    linear-gradient(180deg, #17324f, #0d1a2b);
+  box-shadow: 0 8px 20px rgba(13,26,43,.3);
+}
+/* reflejo del cristal */
+.sc-window::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.07) 44%, transparent 52%, transparent 70%, rgba(255,255,255,.04) 76%, transparent 82%);
+}
+.sc-window .showcase-head { align-items: flex-start; margin-bottom: 12px; }
+.sc-window .showcase-head h3 { line-height: 1; letter-spacing: .03em; }
+.sc-tier { display: block; margin-top: 3px; color: #9fb2c6; font-size: .76rem; }
+.sc-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.sc-boost { background: rgba(244,196,48,.15); color: var(--yellow); border: 1px solid rgba(244,196,48,.45); border-radius: 999px; padding: 1px 9px; font-size: .74rem; font-weight: 700; }
+
+.showcase-grid { position: relative; z-index: 1; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+
+/* Suelo de madera */
+.sc-floor {
+  height: 12px; margin: 14px -12px 0; border-top: 3px solid #8a6a3f;
+  background: repeating-linear-gradient(90deg, #6b4c2a 0 46px, #5f4527 46px 92px);
+}
+
+/* Resumen */
+.sc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 0 -12px; background: rgba(255,255,255,.08); }
+.sc-stats div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 9px 4px; background: #0f2036; text-align: center; }
+.sc-stats small { color: #9fb2c6; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
+.sc-stats b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.08rem; color: var(--yellow); }
+.sc-stats b.pos { color: #5fdc9a; }
+.sc-stats b.loss { color: #ff8a7d; }
+
+/* ----- Piezas del escaparate ----- */
+.tile {
+  overflow: hidden; gap: 6px; padding: 8px 8px 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.18);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.tile:hover { transform: translateY(-4px); border-color: var(--rc); box-shadow: 0 12px 26px rgba(0,0,0,.4), 0 0 18px var(--glow); }
+.tile.r3, .tile.r4 { border-color: var(--rc); box-shadow: 0 0 14px var(--glow); }
+
+/* foco de luz sobre cada camiseta */
+.tile .thumb {
+  overflow: hidden; padding: 20px 6px 6px; border-radius: 10px;
+  background:
+    radial-gradient(90% 75% at 50% 0%, var(--glow), transparent 72%),
+    linear-gradient(180deg, #1d3a5c, #112238);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.tile .thumb::before { top: 6px; height: 5px; background: linear-gradient(#e3eaf0, #7e8c99); }
+.tile .thumb .shirt, .tile .thumb img { max-height: 112px; filter: drop-shadow(0 6px 6px rgba(0,0,0,.45)); }
+/* destello en las legendarias */
+.tile.r4 .thumb::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.28), transparent);
+  animation: sc-shine 4.5s ease-in-out infinite;
+}
+@keyframes sc-shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+
+.plate { padding: 5px 8px; border-radius: 8px; border-left: 3px solid var(--rc); background: rgba(0,0,0,.30); }
+.plate h3 { font-size: 1.02rem; }
+.plate .sub { margin-top: 1px; }
+.tile .star { left: 6px; top: 6px; width: 34px; height: 34px; }
+
+/* Pieza estrella */
+.tile.hero { grid-column: 1 / -1; padding: 10px; border-color: var(--rc); box-shadow: 0 0 18px var(--glow); }
+.tile.hero .thumb { padding-top: 24px; }
+.tile.hero .thumb .shirt, .tile.hero .thumb img { max-height: 170px; }
+.tile.hero .plate h3 { font-size: 1.35rem; }
+.tile.hero .rar-tag { font-size: .72rem; padding: 3px 11px; color: #3a2a00; background: linear-gradient(180deg, #ffe27a, #e0b020); }
+@media (min-width: 640px) {
+  .tile.hero { grid-column: span 2; }
+}
+
+/* Huecos libres */
+.slot { min-height: 190px; padding: 10px; gap: 5px; border-radius: 12px; background: repeating-linear-gradient(135deg, rgba(255,255,255,.03) 0 10px, transparent 10px 20px); }
+.slot span { font-size: 2.1rem; opacity: .45; }
+.slot b { color: #9fb2c6; font-size: .86rem; }
+
+/* ----- Almacén (tarjetas) ----- */
+.shop-card { --rc: #7d92a6; overflow: hidden; padding-top: 16px; }
+.shop-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--rc); }
+.shop-card.r2 { --rc: #4f86c6; }
+.shop-card.r3 { --rc: #9b5fc8; }
+.shop-card.r4 { --rc: #e0b020; background: linear-gradient(180deg, #fff8e1, var(--paper) 40%); border: 2px solid #e0b020; }
+.shop-card.r4::before { background: linear-gradient(90deg, #b88b00, #ffe27a, #b88b00); }
+.shop-card .thumb { background: radial-gradient(90% 80% at 50% 0%, var(--glow), transparent 75%), linear-gradient(180deg, #efe6d4, #dccdae); }
+.shop-card .thumb .shirt, .shop-card .thumb img { filter: drop-shadow(0 5px 5px rgba(0,0,0,.25)); }
+.shop-card .rar-tag { top: 14px; }
+.shop-card .star { top: 14px; }
+
+/* Barra de fama más vistosa */
+.fame-bar { background: linear-gradient(135deg, #fff9e6, var(--paper) 60%); box-shadow: 0 1px 3px rgba(13,26,43,.08); }
+.fame-track { height: 11px; border-radius: 6px; box-shadow: inset 0 1px 2px rgba(0,0,0,.15); }
+.fame-track div { border-radius: 6px; }
+
+@media (max-width: 380px) {
+  .sc-stats b { font-size: .95rem; }
+  .sc-stats small { font-size: .62rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile, .tile:hover { transition: none; transform: none; }
+  .tile.r4 .thumb::after { animation: none; display: none; }
+}
+
+
+/* =====================================================
+   Fichas de camiseta: datos en una sola fila
+   ===================================================== */
+.specs {
+  display: grid; grid-template-columns: 1fr 1.05fr .7fr 1.2fr; gap: 6px;
+  margin: 8px 0 6px;
+}
+.spec {
+  min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 5px 2px 6px; border-radius: 9px; text-align: center;
+  background: #eef2f6; border: 1px solid #dbe3ea; color: var(--text);
+}
+.spec small { font-size: .6rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); line-height: 1.1; }
+.spec b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; font-weight: 700; line-height: 1.2; }
+.spec.rar { background: #fff; border-color: var(--rc, #dbe3ea); }
+.spec.rar b { color: var(--rc, #33485c); letter-spacing: .02em; font-size: .8rem; }
+.spec.rar.r4 b, .r4 .spec.rar b { text-shadow: 0 0 6px rgba(224,176,32,.5); }
+.spec.size { background: var(--ink-3); border-color: var(--ink-3); }
+.spec.size small { color: #9fb2c6; }
+.spec.size b { color: #fff; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.15rem; }
+
+.chips.status { margin: 0 0 6px; }
+.chips.status .chip { font-weight: 600; }
+
+.est {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 10px; border-radius: 9px; background: #fbf6e4; border: 1px dashed #d9bd5a;
+  font-size: .85rem; color: #6b5200;
+}
+.est b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1rem; color: var(--text); letter-spacing: .01em; }

@@ -493,23 +493,24 @@
     return `${fmt(e.low)} – ${fmt(e.high)}`;
   }
 
+  const COND_SHORT = { nueva: 'Nueva', excelente: 'Excelente', buena: 'Buena', usada: 'Usada' };
+
   function itemHead(it) {
     const kit = kitOf(it);
+    const status = [authChip(it), trendChip(kit), S.stock.includes(it) ? fameChip(it) : ''].join('');
     return `
       <div class="thumb">${kitImage(kit)}${it.special ? '<span class="signed">Firmada</span>' : ''}</div>
       <div class="info">
         <h3>${kit.team} ${kit.year}</h3>
         <p class="sub">${kit.type} · ${kit.brand}</p>
-        <div class="chips">
-          <span class="chip">${eraLabel(kit)}</span>
-          <span class="chip" title="${RARITY_LABELS[kit.rarity]}">${stars(kit.rarity)}</span>
-          <span class="chip size">Talla ${it.size}</span>
-          <span class="chip">${COND[it.cond].label}</span>
-          ${authChip(it)}
-          ${trendChip(kit)}
-          ${S.stock.includes(it) ? fameChip(it) : ''}
+        <div class="specs">
+          <div class="spec"><small>Época</small><b>${eraLabel(kit)}</b></div>
+          <div class="spec rar" title="${RARITY_LABELS[kit.rarity]}"><small>Rareza</small><b>${stars(kit.rarity)}</b></div>
+          <div class="spec size"><small>Talla</small><b>${it.size}</b></div>
+          <div class="spec" title="${COND[it.cond].label}"><small>Estado</small><b>${COND_SHORT[it.cond] || COND[it.cond].label}</b></div>
         </div>
-        <p class="est">Valoración: <b>${estimateText(it)}</b></p>
+        ${status.trim() ? `<div class="chips status">${status}</div>` : ''}
+        <p class="est"><span>Valoración</span><b>${estimateText(it)}</b></p>
       </div>`;
   }
 
@@ -564,6 +565,7 @@
     return `
       <article class="card shop-card r${kitOf(it).rarity}" data-uid="${it.uid}">
         ${starBtn(it, false)}
+        <span class="rar-tag r${kitOf(it).rarity}">${RARITY_LABELS[kitOf(it).rarity]}</span>
         ${itemHead(it)}
         <p class="seller">Pagaste ${fmt(it.paid)} · Margen ${marginHTML(it)} · ${itemAge(it)} d</p>
         <button class="price-btn" data-action="editprice" data-uid="${it.uid}"><small>Tu precio</small><b>${fmt(it.listPrice)}</b><span>✎ Cambiar</span></button>
@@ -594,16 +596,19 @@
       </article>`;
   }
 
-  // Pieza del escaparate
-  function shopTile(it, pos) {
+  // Pieza del escaparate (hero = pieza estrella, más grande)
+  function shopTile(it, pos, hero) {
     const kit = kitOf(it);
     return `
-      <article class="tile r${kit.rarity}" data-uid="${it.uid}">
+      <article class="tile r${kit.rarity}${hero ? ' hero' : ''}" data-uid="${it.uid}">
         ${starBtn(it, true)}
+        <span class="rar-tag r${kit.rarity}">${hero ? '⭐ ' : ''}${hero ? 'Pieza estrella' : RARITY_LABELS[kit.rarity]}</span>
         <div class="thumb">${kitImage(kit)}${it.special ? '<span class="signed">Firmada</span>' : ''}</div>
-        <h3>${kit.team} ${kit.year}</h3>
-        <p class="sub">Talla ${it.size} · ${COND[it.cond].label}</p>
-        ${miniPrice(it)}
+        <div class="plate">
+          <h3>${kit.team} ${kit.year}</h3>
+          <p class="sub">${kit.type} · Talla ${it.size} · ${COND[it.cond].label}${hero ? ` · ${RARITY_LABELS[kit.rarity]}` : ''}</p>
+        </div>
+        <div class="tile-price">${miniPrice(it)}</div>
         <div class="tile-foot">${moveBtns(it, pos)}<span class="seller">${marginHTML(it)}</span></div>
       </article>`;
   }
@@ -652,11 +657,27 @@
   function showcaseHTML() {
     const items = featuredItems();
     const slots = maxFeatured();
-    const tiles = items.map((it, i) => shopTile(it, { first: i === 0, last: i === items.length - 1 })).join('');
+    const tiles = items.map((it, i) => shopTile(it, { first: i === 0, last: i === items.length - 1 }, i === 0 && items.length > 1)).join('');
     const free = Math.max(0, slots - items.length);
-    const empty = '<div class="slot"><span>☆</span><small>Hueco libre<br>Destaca una camiseta con ★</small></div>'.repeat(free);
-    return `<div class="showcase-head"><h3>🪟 Escaparate</h3><small>Lo primero que ven los clientes · ${items.length}/${slots}</small></div>
-      <div class="showcase-grid">${tiles}${empty}</div>`;
+    const empty = '<div class="slot"><span>👕</span><b>Hueco libre</b><small>Pulsa la ★ de una camiseta del almacén para exponerla aquí</small></div>'.repeat(free);
+    const value = items.reduce((s, it) => s + it.listPrice, 0);
+    const margin = items.reduce((s, it) => s + it.listPrice - it.paid, 0);
+    const pts = Math.round(items.reduce((s, it) => s + fameOf(it), 0) * 10) / 10;
+    const tierName = FAME_TIERS[fame().tier].name;
+    return `<div class="sc-awning" aria-hidden="true"></div>
+      <div class="sc-window">
+        <div class="showcase-head">
+          <div><h3>🪟 Escaparate</h3><small class="sc-tier">${tierName}</small></div>
+          <div class="sc-meta"><span class="sc-boost" title="Las piezas del escaparate puntúan más fama">×1,5 fama</span><small>${items.length}/${slots} expuestas</small></div>
+        </div>
+        <div class="showcase-grid">${tiles}${empty}</div>
+        <div class="sc-floor" aria-hidden="true"></div>
+        <div class="sc-stats">
+          <div><small>Valor expuesto</small><b>${fmt(value)}</b></div>
+          <div><small>Margen potencial</small><b class="${margin >= 0 ? 'pos' : 'loss'}">${margin >= 0 ? '+' : ''}${fmt(margin)}</b></div>
+          <div><small>Fama que aportan</small><b>🏛️ ${pts}</b></div>
+        </div>
+      </div>`;
   }
 
   // ---------- Acciones del escaparate y el orden ----------
