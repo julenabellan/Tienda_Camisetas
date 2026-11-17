@@ -1452,3 +1452,74 @@ main { width: var(--col); max-width: calc(100% - 28px); margin: 12px auto 0; pad
 .cvd-actions { display: flex; gap: 8px; }
 .cvd-actions .btn { flex: 1; min-height: 44px; }
 @media (max-height: 640px) { .cvd-img { height: 32vh; } }
+
+/* =====================================================
+   Resumen del día (ventana «Cierre del día», clases «dr-»)
+   ===================================================== */
+.sheet:has(.dr) { padding: 0 0 calc(14px + env(safe-area-inset-bottom)); overflow-x: hidden; }
+.dr { gap: 12px; }
+.dr > :not(.dr-hero) { margin: 0 14px; }
+.dr h4 { margin: 0 0 6px; padding: 0; border: 0; font-family: 'Barlow', sans-serif; font-size: .78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+
+.dr-hero {
+  position: relative; margin: 0; padding: 18px 16px 20px; text-align: center; color: #fff; overflow: hidden;
+  background: radial-gradient(420px 190px at 88% -30px, rgba(244, 196, 48, .34), transparent 70%), linear-gradient(165deg, #1f3a5c, #0d1a2b 78%);
+}
+.dr-hero.down { background: radial-gradient(420px 190px at 88% -30px, rgba(255, 130, 110, .26), transparent 70%), linear-gradient(165deg, #3a2431, #0d1a2b 78%); }
+.dr-sky {   /* estrellitas */
+  position: absolute; inset: 0; opacity: .7; pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 9% 26%, #fff 55%, transparent), radial-gradient(1px 1px at 22% 68%, #fff 55%, transparent),
+    radial-gradient(1.5px 1.5px at 74% 18%, #fff 55%, transparent), radial-gradient(1px 1px at 91% 62%, #fff 55%, transparent),
+    radial-gradient(1px 1px at 40% 14%, #ffe27a 55%, transparent), radial-gradient(1.5px 1.5px at 58% 80%, #fff 55%, transparent);
+  animation: dr-twinkle 3.2s ease-in-out infinite alternate;
+}
+.dr-moon { position: relative; display: block; font-size: 2.1rem; line-height: 1; filter: drop-shadow(0 0 12px rgba(255, 226, 122, .55)); animation: dr-float 4s ease-in-out infinite; }
+.dr-hero small { position: relative; display: block; margin-top: 8px; color: #9fb2c6; font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; }
+.dr-net {
+  position: relative; font-family: 'Anton', sans-serif; font-weight: 400; font-size: clamp(2.7rem, 15vw, 3.8rem); line-height: 1.05; color: var(--yellow);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .35); font-variant-numeric: tabular-nums; animation: dr-pop .55s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+.dr-hero.down .dr-net { color: #ff9b8c; }
+.dr-hero p { position: relative; margin: 2px 0 0; color: #cfe0ef; font-size: .95rem; }
+
+.dr-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.dr-stats > div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+.dr-stats i { font-style: normal; font-size: 1.05rem; line-height: 1.2; }
+.dr-stats b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.2rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.dr-stats small { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; }
+
+.dr-block { display: flex; flex-direction: column; gap: 5px; }
+.dr-block h4 { margin-bottom: 1px; }
+.dr-sale {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 8px; padding: 7px 10px; font-size: .9rem;
+  background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px;
+}
+.dr-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.dr-sale b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1rem; font-variant-numeric: tabular-nums; }
+.dr-sale em { font-style: normal; font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dr-more { margin: 0; text-align: center; color: var(--muted); font-size: .8rem; }
+
+.dr-ticket { padding: 2px 12px; background: #fff; border: 1px dashed #b4c2cf; border-radius: 12px; }
+.dr-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #eef2f5; font-size: .9rem; }
+.dr-row:last-child { border-bottom: 0; }
+.dr-ico { width: 22px; text-align: center; }
+.dr-lab { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-lab small { display: block; color: var(--muted); font-size: .72rem; }
+.dr-row b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dr-row.soft { font-size: .84rem; color: var(--muted); }
+
+.dr-news { padding: 9px 12px; background: #fff8e1; border: 1px solid #ecd58a; border-radius: 12px; }
+.dr-news h4 { color: #7a5c00; }
+.dr-news p { margin: 3px 0 0; font-size: .88rem; }
+
+/* el botón siempre a la vista, aunque haya que desplazar el resumen */
+.dr .actions { position: sticky; bottom: 0; z-index: 2; margin-top: 2px; padding-top: 10px; background: linear-gradient(rgba(247, 249, 251, 0), var(--paper, #f7f9fb) 40%); }
+.dr .actions .btn { width: 100%; max-width: none; }
+
+.dr-stats, .dr-block, .dr-news { animation: dr-rise .35s ease both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes dr-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes dr-pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes dr-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes dr-twinkle { from { opacity: .35; } to { opacity: .85; } }
+@media (prefers-reduced-motion: reduce) { .dr *, .dr-hero * { animation: none !important; } }

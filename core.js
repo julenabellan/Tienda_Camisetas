@@ -908,24 +908,73 @@ function startOfDayEvents() {
   }
 }
 
+// Resumen del día (ventana al cerrar la tienda): resultado grande, tres datos clave, ventas y movimientos.
+// Los clientes que no compraron ya no se detallan.
+function dayReportHTML(d) {
+  const money = n => (n < 0 ? '−' : '+') + fmt(Math.abs(n));
+  const sold = d.sales.length;
+  const mood = sold === 0 ? 'Hoy no se ha vendido nada' : d.net < 0 ? 'Día flojo' : sold >= 4 ? '¡Gran día de ventas!' : 'Buen día';
+
+  // «Camiseta 1998: 120 € (+30 €)» → nombre · precio · beneficio (si no encaja, se muestra tal cual)
+  const saleRow = s => {
+    const m = /^(.+?): ([^(]+?)\s*\(([^)]*)\)/.exec(s);
+    if (!m) return `<div class="dr-sale"><span class="dr-name">${s}</span></div>`;
+    const loss = /^[-−–]/.test(m[3].trim());
+    return `<div class="dr-sale"><span class="dr-name">${m[1]}</span><b>${m[2]}</b><em class="${loss ? 'neg' : 'pos'}">${m[3]}</em></div>`;
+  };
+  const MAX_SALES = 3;
+  const salesBlock = sold ? `
+    <div class="dr-block" style="--i:2">
+      <h4>Ventas de hoy</h4>
+      ${d.sales.slice(0, MAX_SALES).map(saleRow).join('')}
+      ${sold > MAX_SALES ? `<p class="dr-more">y ${sold - MAX_SALES} más</p>` : ''}
+    </div>` : '';
+
+  const rowsHTML = d.rows.map(r => `
+      <div class="dr-row"><span class="dr-ico">${r.ico}</span><span class="dr-lab">${r.label}${r.note ? `<small>${r.note}</small>` : ''}</span><b class="${r.amt < 0 ? 'neg' : 'pos'}">${money(r.amt)}</b></div>`).join('');
+  const fameRow = d.fameLost >= 1
+    ? `<div class="dr-row soft"><span class="dr-ico">📉</span><span class="dr-lab">Fama perdida por vender</span><b class="neg">−${d.fameLost} pts</b></div>` : '';
+
+  return `
+    <div class="report dr">
+      <div class="dr-hero${d.net < 0 ? ' down' : ''}">
+        <div class="dr-sky" aria-hidden="true"></div>
+        <span class="dr-moon" aria-hidden="true">🌙</span>
+        <small>Cierre del día ${d.day}</small>
+        <div class="dr-net">${money(d.net)}</div>
+        <p>${mood}</p>
+      </div>
+      <div class="dr-stats" style="--i:1">
+        <div><i aria-hidden="true">🧍</i><b>${d.customers}</b><small>clientes</small></div>
+        <div><i aria-hidden="true">👕</i><b>${sold}</b><small>vendidas</small></div>
+        <div><i aria-hidden="true">💼</i><b>${fmt(d.cash)}</b><small>en caja</small></div>
+      </div>
+      ${salesBlock}
+      <div class="dr-block" style="--i:3">
+        <h4>Movimientos</h4>
+        <div class="dr-ticket">${rowsHTML}${fameRow}</div>
+      </div>
+      ${d.news.length ? `<div class="dr-news" style="--i:4"><h4>📰 Para mañana</h4>${d.news.map(n => `<p>${n}</p>`).join('')}</div>` : ''}
+      <div class="actions"><button class="btn big" data-choice="ok">Empezar el día ${d.next}</button></div>
+    </div>`;
+}
+
 async function endDay(report) {
   overnightSales(report);   // ventas de un día para otro: pagan y se van sin regatear
   S.money -= RENT;
-  const lines = [];
-  lines.push(`<li>Alquiler: <b>-${fmt(RENT)}</b></li>`);
+  const rows = [];   // movimientos de dinero del día, para el resumen
+  if (report.income) rows.push({ ico: '💰', label: 'Ventas', amt: report.income });
+  rows.push({ ico: '🏠', label: 'Alquiler', amt: -RENT });
   const fm = fame();
   const visitIncome = FAME_TIERS[fm.tier].income;
   if (visitIncome > 0) {
     S.money += visitIncome;
-    lines.push(`<li>🏛️ Visitas a tu colección (${FAME_TIERS[fm.tier].name}): <b>+${fmt(visitIncome)}</b></li>`);
+    rows.push({ ico: '🏛️', label: `Visitas · ${FAME_TIERS[fm.tier].name}`, amt: visitIncome });
   }
   const mu = typeof museumInfo === 'function' ? museumInfo() : null;
   if (mu && mu.income > 0) {
     S.money += mu.income;
-    lines.push(`<li>📚 Entradas a tu colección (${mu.name}): <b>+${fmt(mu.income)}</b></li>`);
-  }
-  if (report.fameLost >= 1) {
-    lines.push(`<li class="neg">Las ventas de hoy te han restado ${report.fameLost} puntos de fama.</li>`);
+    rows.push({ ico: '📚', label: `Entradas · ${mu.name}`, amt: mu.income });
   }
 
   S.day++;
@@ -933,9 +982,8 @@ async function endDay(report) {
     S.pendingReturns.forEach(r => {
       S.money -= r.refund;
       S.rep = clamp(S.rep - 4, 0, 100);
-      const text = `Devolución: un cliente descubrió que ${r.name} era una réplica. Reembolsas ${fmt(r.refund)} y pierdes reputación.`;
-      log(text);
-      lines.push(`<li class="neg">${text}</li>`);
+      log(`Devolución: un cliente descubrió que ${r.name} era una réplica. Reembolsas ${fmt(r.refund)} y pierdes reputación.`);
+      rows.push({ ico: '↩️', label: `Devolución · ${r.name}`, amt: -r.refund, note: 'Era una réplica' });
     });
     S.pendingReturns = [];
   }
@@ -943,17 +991,12 @@ async function endDay(report) {
   S.market = genMarket();
   S.packs = genPacks();
 
-  const todayNews = S.news.filter(n => n.day === S.day).map(n => n.text);
+  const todayNews = S.news.filter(n => n.day === S.day && !n.text.startsWith('Devolución:')).map(n => n.text);   // las devoluciones ya salen en Movimientos
 
-  const html = `
-    <div class="report">
-      <div class="report-banner"><span>🌙</span><div><h3>Cierre del día ${S.day - 1}</h3><p>${report.customers} clientes</p></div><b>${fmt(report.income)}</b></div>
-      ${report.sales.length ? `<h4>💰 Ventas</h4><ul class="list-ok">${report.sales.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
-      ${report.lost.length ? `<h4>🚪 Ventas perdidas</h4><ul class="list-bad">${report.lost.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
-      <h4>🧾 Movimientos</h4><ul>${lines.join('')}</ul>
-      ${todayNews.length ? `<h4>📰 Noticias para mañana</h4><ul>${todayNews.map(s => `<li>${s}</li>`).join('')}</ul>` : ''}
-      <div class="actions"><button class="btn primary" data-choice="ok">Empezar el día ${S.day}</button></div>
-    </div>`;
+  const html = dayReportHTML({
+    day: S.day - 1, next: S.day, customers: report.customers, sales: report.sales, rows,
+    net: rows.reduce((a, r) => a + r.amt, 0), cash: S.money, fameLost: Math.round(report.fameLost || 0), news: todayNews,
+  });
   save(); renderAll();
   await dialog(html);
   closeDialog();
