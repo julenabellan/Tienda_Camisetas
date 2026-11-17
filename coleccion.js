@@ -2,7 +2,8 @@
 // Las camisetas ORIGINALES (autenticadas) se pueden apartar de la tienda y exponer en tu colección.
 // Una pieza coleccionada no se vende, no ocupa percha y sigue sumando fama. Cuanto mejor es su estado,
 // más puntos de colección da, más fama aporta y antes sube tu categoría (que paga entradas cada día).
-// Depende de core.js (S, kitOf, estimate, fame…) y de camisetas.js (kitImage). Se carga después de ellos.
+// Clic en una pieza de la vitrina → ficha grande con detalle (estado, valor, puntos, fama…).
+// Depende de core.js (S, kitOf, estimate, fame, dialog…) y de camisetas.js (kitImage). Se carga después de ellos.
 'use strict';
 (() => {
 
@@ -131,7 +132,8 @@
     : '');
 
   // ---------- Plantillas ----------
-  const CV_FILTERS = [['all', 'Todas'], ['signed', '✍️ Firmadas'], ['nueva', '💎 Mint'], ['excelente', '🥇 Excelente'], ['buena', '🥈 Buena'], ['usada', '🥉 Gastada']];
+  // [clave, icono, etiqueta]
+  const CV_FILTERS = [['all', '', 'Todas'], ['signed', '✍️', 'Firmadas'], ['nueva', '💎', 'Mint'], ['excelente', '🥇', 'Excelente'], ['buena', '🥈', 'Buena'], ['usada', '🥉', 'Gastada']];
   const cvPass = (it, f) => f === 'all' || (f === 'signed' ? !!it.special : it.cond === f);
   const CV_SORTS = {
     cond: (a, b) => COLLECT_GRADE[b.cond].n - COLLECT_GRADE[a.cond].n || kitOf(b).rarity - kitOf(a).rarity || estimate(b).mid - estimate(a).mid,
@@ -183,19 +185,22 @@
   function setsHTML(f) {
     return f.sets.map(c => {
       const pct = clamp(c.n / c.need * 100, 0, 100);
-      return `<div class="cv-set${c.done ? ' done' : ''}">
+      const info = `${c.desc}${c.bonus ? ` · +${c.bonus} fama al completarlo` : ''}`;
+      return `<div class="cv-set${c.done ? ' done' : ''}" tabindex="0" role="button" aria-expanded="false" title="${info}">
         <span class="cv-set-ico">${c.icon}</span>
-        <div class="cv-set-main"><b>${c.name}</b><small>${c.desc}</small><div class="cv-set-bar"><i style="width:${pct}%"></i></div></div>
-        <em>${Math.min(c.n, c.need)}/${c.need}</em>
+        <b class="cv-set-name">${c.name}</b>
+        <em>${c.done ? '✔' : `${Math.min(c.n, c.need)}/${c.need}`}</em>
+        <div class="cv-set-bar"><i style="width:${pct}%"></i></div>
+        <small class="cv-set-desc">${info}</small>
       </div>`;
     }).join('');
   }
 
   function toolsHTML(list) {
     const v = cview();
-    const chips = CV_FILTERS.map(([f, l]) => {
+    const chips = CV_FILTERS.map(([f, ico, l]) => {
       const n = list.filter(it => cvPass(it, f)).length;
-      return `<button class="cv-chip${v.filter === f ? ' on' : ''}" data-action="cfilter" data-f="${f}">${l} <b>${n}</b></button>`;
+      return `<button class="cv-chip${f === 'all' ? ' all' : ''}${v.filter === f ? ' on' : ''}" data-action="cfilter" data-f="${f}" title="${l}" aria-label="${l}: ${n}">${ico ? `<span class="ico">${ico}</span>` : ''}<span class="lbl">${l}</span><b>${n}</b></button>`;
     }).join('');
     const opts = CV_SORT_LABELS.map(([k, l]) => `<option value="${k}"${v.sort === k ? ' selected' : ''}>${l}</option>`).join('');
     return `<div class="cv-chips">${chips}</div>
@@ -206,9 +211,9 @@
     const kit = kitOf(it);
     const g = COLLECT_GRADE[it.cond];
     return `
-      <article class="cv-card g${g.n} r${kit.rarity}" data-uid="${it.uid}">
+      <article class="cv-card g${g.n} r${kit.rarity}" data-uid="${it.uid}" tabindex="0" role="button" title="Ver en detalle" aria-label="Ver en detalle: ${kit.team} ${kit.year}">
         <div class="cv-top">${gradeBadge(it)}<span class="cv-pts" title="Puntos de colección">+${num(collectPts(it))} pts</span></div>
-        <div class="cv-thumb">${kitImage(kit, it)}${it.special ? '<span class="cv-signed">✍️ Firmada</span>' : ''}</div>
+        <div class="cv-thumb">${kitImage(kit, it)}${it.special ? '<span class="cv-signed">✍️ Firmada</span>' : ''}<span class="cv-zoom" aria-hidden="true">🔍</span></div>
         <div class="cv-plate">
           <h3>${kit.team} ${kit.year}</h3>
           <p>${kit.type} · ${kit.brand} · Talla ${it.size}</p>
@@ -236,6 +241,80 @@
       </article>`;
   }
 
+
+  // ---------- Ficha de detalle ----------
+  let shownUids = [];                 // piezas visibles en la vitrina (para ir a la anterior / siguiente)
+  const detail = { open: false };
+
+  function detailHTML(it, i, total) {
+    const kit = kitOf(it);
+    const g = COLLECT_GRADE[it.cond];
+    const e = estimate(it);
+    const pts = collectPts(it);
+    const score = museumInfo().score;
+    const share = score ? Math.round(pts / score * 100) : 0;
+    const gain = it.paid > 0 ? e.mid - it.paid : null;
+    const nav = total > 1
+      ? '<button class="cvd-nav prev" data-choice="prev" aria-label="Anterior">‹</button><button class="cvd-nav next" data-choice="next" aria-label="Siguiente">›</button>'
+      : '';
+    const calc = `
+      <div class="cvd-calc">
+        <h4>Cómo se calculan sus puntos</h4>
+        <div class="cvd-calc-row">
+          <span><small>Rareza</small><b>${num(FAME_BASE[kit.rarity])}</b></span><i>×</i>
+          <span><small>Estado</small><b>${num(g.mult)}</b></span>
+          ${it.special ? '<i>×</i><span><small>Firma</small><b>1,5</b></span>' : ''}<i>=</i>
+          <span class="tot"><small>Puntos</small><b>+${num(pts)}</b></span>
+        </div>
+      </div>`;
+    return `
+      <div class="cvd g${g.n} r${kit.rarity}">
+        <div class="cvd-stage">
+          <div class="cv-top">${gradeBadge(it)}<span class="cvd-ctrl">${total > 1 ? `<small>${i + 1} / ${total}</small>` : ''}<button class="cvd-x" data-choice="close" aria-label="Cerrar">✕</button></span></div>
+          <div class="cvd-img">${kitImage(kit, it)}${it.special ? '<span class="cv-signed">✍️ Firmada</span>' : ''}</div>
+          ${nav}
+        </div>
+        <div class="cvd-head">
+          <small>${kit.type} · ${kit.brand}</small>
+          <h3>${kit.team} ${kit.year}</h3>
+          <div class="cvd-rar"><span class="cv-stars">${stars(kit.rarity)}</span><span>${RARITY_LABELS[kit.rarity]}</span><span class="cvd-ok">✔ Original autenticada</span></div>
+        </div>
+        <div class="cvd-facts">
+          <div><small>Estado</small><b>${g.icon} ${g.label}</b>${gradePips(it)}</div>
+          <div><small>Valor estimado</small><b>${fmt(e.mid)}</b><em>${fmt(e.low)} – ${fmt(e.high)}</em></div>
+          <div><small>Talla</small><b>${it.size}</b><em>${it.special ? 'Edición firmada' : 'Sin firma'}</em></div>
+          <div><small>En tu colección</small><b>Día ${it.collectedDay || 1}</b><em>${share}% de tus puntos</em></div>
+          <div><small>Fama</small><b>×${num(g.fame)}</b><em>por estar expuesta</em></div>
+          ${gain === null ? `<div><small>Puntos</small><b>+${num(pts)}</b><em>de colección</em></div>` : `<div><small>Pagaste</small><b>${fmt(it.paid)}</b><em class="${gain >= 0 ? 'pos' : 'neg'}">${gain >= 0 ? '+' : '−'}${fmt(Math.abs(gain))} de valor</em></div>`}
+        </div>
+        ${calc}
+        <div class="cvd-actions">
+          <button class="btn" data-choice="uncollect" title="Devolverla al almacén para poder venderla">Sacar de la colección</button>
+          <button class="btn primary" data-choice="close">Cerrar</button>
+        </div>
+      </div>`;
+  }
+
+  async function openDetail(uid) {
+    uid = Number(uid);
+    let list = shownUids.includes(uid) ? shownUids.slice() : [uid];
+    let i = list.indexOf(uid);
+    detail.open = true;
+    try {
+      for (;;) {
+        const it = collectionOf().find(x => x.uid === list[i]);
+        if (!it) { closeDialog(); return; }
+        const p = dialog(detailHTML(it, i, list.length));
+        const sheet = $('#sheet'); if (sheet) sheet.scrollTop = 0;
+        const r = await p;
+        if (r.choice === 'prev') i = (i - 1 + list.length) % list.length;
+        else if (r.choice === 'next') i = (i + 1) % list.length;
+        else { closeDialog(); if (r.choice === 'uncollect') uncollectItem(it.uid); return; }
+      }
+    } finally { detail.open = false; }
+  }
+  const detailBtn = c => $(`#sheet [data-choice="${c}"]`);
+
   // ---------- Render ----------
   function renderCollectionTab(f = fame()) {
     if (!$('#tab-collection')) return;
@@ -243,6 +322,7 @@
     const list = m.list;
     const v = cview();
     const shown = list.filter(it => cvPass(it, v.filter)).sort(CV_SORTS[v.sort] || CV_SORTS.cond);
+    shownUids = shown.map(it => it.uid);
 
     $('#coll-sub').textContent = list.length
       ? `${list.length} ${list.length === 1 ? 'pieza original' : 'piezas originales'} · ${m.name}`
@@ -268,18 +348,38 @@
   }
 
   // ---------- Eventos ----------
+  const modalHidden = () => { const m = $('#modal'); return !m || m.classList.contains('hidden'); };
   document.addEventListener('click', e => {
+    if (detail.open && modalHidden()) detail.open = false;
+    if (detail.open) { if (e.target.id === 'modal' && detailBtn('close')) detailBtn('close').click(); return; }   // clic fuera = cerrar
     const b = e.target.closest('[data-action]');
-    if (!b) return;
-    const a = b.dataset.action;
-    if (a === 'collect') collectItem(b.dataset.uid);
-    else if (a === 'uncollect') uncollectItem(b.dataset.uid);
-    else if (a === 'cfilter') { cview().filter = cview().filter === b.dataset.f ? 'all' : b.dataset.f; save(); renderAll(); }
+    if (b) {
+      const a = b.dataset.action;
+      if (a === 'collect') collectItem(b.dataset.uid);
+      else if (a === 'uncollect') uncollectItem(b.dataset.uid);
+      else if (a === 'cfilter') { cview().filter = cview().filter === b.dataset.f ? 'all' : b.dataset.f; save(); renderAll(); }
+      return;
+    }
+    const card = e.target.closest('#tab-collection .cv-card[data-uid]');
+    if (card) { openDetail(card.dataset.uid); return; }
+    const set = e.target.closest('#tab-collection .cv-set');
+    if (set) { const on = set.classList.toggle('open'); set.setAttribute('aria-expanded', on); }
+  });
+  document.addEventListener('keydown', e => {
+    if (detail.open && modalHidden()) detail.open = false;
+    if (detail.open) {
+      const key = { Escape: 'close', ArrowLeft: 'prev', ArrowRight: 'next' }[e.key];
+      if (key && detailBtn(key)) { e.preventDefault(); detailBtn(key).click(); }
+      return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('#tab-collection .cv-card, #tab-collection .cv-set')) {
+      e.preventDefault(); e.target.click();
+    }
   });
   document.addEventListener('change', e => {
     if (e.target.matches && e.target.matches('select[data-csort]')) { cview().sort = e.target.value; save(); renderAll(); }
   });
 
   // Lo que usan core.js y otros archivos
-  Object.assign(window, { collectFameMult, museumInfo, collectBtn, renderCollectionTab, collectItem, uncollectItem, ownedFlag, ownedChip, packOwnedChip });
+  Object.assign(window, { collectFameMult, museumInfo, collectBtn, renderCollectionTab, collectItem, uncollectItem, openCollectionDetail: openDetail, ownedFlag, ownedChip, packOwnedChip });
 })();
