@@ -1,7 +1,7 @@
 // core.js — LO BÁSICO
 // Configuración, packs, utilidades, estado y guardado, valoración, fama y colecciones, generación de ofertas,
 // pantalla de tienda y mercado (plantillas y render), avisos y diálogos, mejoras, fin de día, inicio/reinicio y clics.
-// Depende de data.js. Se carga el primero tras data.js.
+// Depende de data.js. Se carga el primero tras data.js. (La pestaña Colección vive en coleccion.js.)
 'use strict';
 
 // ---------- Configuración ----------
@@ -16,7 +16,7 @@ const SIZE_ORDER = ['S', 'M', 'L', 'XL', 'XXL'];
 const SIZE_WEIGHTS = { S: 14, M: 34, L: 30, XL: 17, XXL: 5 };   // lo que aparece en el mercado
 const SIZE_DEMAND = { S: 12, M: 34, L: 32, XL: 16, XXL: 6 };    // lo que piden los clientes
 const SIZE_MISS = 0.55;     // prob. de que un cliente se vaya si solo tienes tallas vecinas
-const FEATURED_BASE = 3;    // camisetas destacables (+1 por ampliación)
+const FEATURED_BASE = 3;    // máximo de camisetas en el escaparate (fijo: ampliar la tienda no lo cambia)
 const CONDITIONS = [
   { id: 'nueva', label: 'Nueva con etiquetas', coef: 1.6, w: 8 },
   { id: 'excelente', label: 'Excelente', coef: 1.15, w: 27 },
@@ -120,6 +120,7 @@ function newGame() {
     stats: { sold: 0, profit: 0, revenue: 0 },
     goalReached: false, seenIntro: false, over: false,
     featured: [], view: { filter: 'all', sort: 'manual', mode: 'cards', v3: true }, marketSort: 'ganga', sizeLost: {},
+    collection: [], cview: { sort: 'cond', filter: 'all' },   // colección: piezas apartadas de la tienda
   };
   S.market = genMarket();
   S.packs = genPacks(true);   // el primer día siempre hay al menos un lote
@@ -157,7 +158,8 @@ function trendMult(kit) {
 
 function valueIfReal(it) {
   const kit = kitOf(it);
-  return kit.base * COND[it.cond].coef * SIZES[it.size] * (it.special ? 2.2 : 1) * trendMult(kit);
+  return kit.base * COND[it.cond].coef * SIZES[it.size] * (it.special ? 2.2 : 1) * trendMult(kit)
+    * (typeof restoreMult === 'function' ? restoreMult(it) : 1);
 }
 const replicaValue = it => Math.max(4, valueIfReal(it) * 0.08);
 const trueValue = it => (it.real ? valueIfReal(it) : replicaValue(it));
@@ -170,7 +172,7 @@ function estimate(it) {
 }
 
 function netWorth() {
-  return S.money + S.stock.reduce((s, it) => s + estimate(it).mid, 0);
+  return S.money + S.stock.concat(S.collection || []).reduce((s, it) => s + estimate(it).mid, 0);
 }
 
 
@@ -204,11 +206,12 @@ const COLLECTIONS = [
 function fameOf(it) {
   const kit = kitOf(it);
   const auth = it.verified ? (it.real ? 1 : 0) : 0.5;     // sin verificar cuenta la mitad; una réplica no suma
-  return FAME_BASE[kit.rarity] * FAME_COND[it.cond] * (it.special ? 2 : 1) * auth * (S.featured.includes(it.uid) ? 1.5 : 1);
+  return FAME_BASE[kit.rarity] * FAME_COND[it.cond] * (it.special ? 2 : 1) * auth * (S.featured.includes(it.uid) ? 1.5 : 1)
+    * (typeof collectFameMult === 'function' ? collectFameMult(it) : 1);
 }
 
 function fame() {
-  const items = S.stock.map(it => ({ it, pts: fameOf(it) }));
+  const items = S.stock.concat(S.collection || []).map(it => ({ it, pts: fameOf(it) }));   // almacén + colección
   const valid = items.filter(x => x.pts > 0);
   const sets = COLLECTIONS.map(c => { const n = c.count(valid); return { ...c, n, done: n >= c.need }; });
   const base = items.reduce((a, x) => a + x.pts, 0);
@@ -360,9 +363,10 @@ const COND_SHORT = { nueva: 'Nueva', excelente: 'Excelente', buena: 'Buena', usa
 
 function itemHead(it) {
   const kit = kitOf(it);
-  const status = [authChip(it), trendChip(kit), S.stock.includes(it) ? fameChip(it) : ''].join('');
+  const inStock = S.stock.includes(it);
+  const status = [it.special ? '<span class="chip good">✍️ Firmada · ×2,2 de valor</span>' : '', authChip(it), typeof ownedChip === 'function' ? ownedChip(it) : '', trendChip(kit), inStock ? fameChip(it) : '', inStock && typeof restoreChips === 'function' ? restoreChips(it) : ''].join('');
   return `
-    <div class="thumb">${kitImage(kit)}${it.special ? '<span class="signed">Firmada</span>' : ''}</div>
+    <div class="thumb">${kitImage(kit, it)}${it.special ? '<span class="signed">Firmada</span>' : ''}</div>
     <div class="info">
       <h3>${kit.team} ${kit.year}</h3>
       <p class="sub">${kit.type} · ${kit.brand}</p>
@@ -390,11 +394,12 @@ function marketCard(o) {
     it.special ? '<span class="signed">Firmada</span>' : '',
     ganga ? '<span class="deal">🔥 Posible ganga</span>' : '',
     sizeCount(it.size) === 0 ? `<span class="deal need">🧩 Te falta la ${it.size}</span>` : '',
+    typeof ownedFlag === 'function' ? ownedFlag(it) : '',
   ].join('');
   return `
     <article class="card mcard r${kit.rarity}" data-offer="${o.id}">
       <div class="thumb mc-thumb">
-        ${kitImage(kit)}
+        ${kitImage(kit, it)}
         <span class="mc-stars" title="${RARITY_LABELS[kit.rarity]}">${stars(kit.rarity)}</span>
         <div class="price-tag" aria-label="Precio pedido"><small>Pide</small>${fmt(o.ask)}</div>
         ${flags ? `<div class="mc-flags">${flags}</div>` : ''}
@@ -415,7 +420,7 @@ function marketCard(o) {
 
 // ---------- Tienda: piezas reutilizables ----------
 const suggestedPrice = it => nice(estimate(it).mid * 1.2);
-const maxFeatured = () => FEATURED_BASE + S.upgrades;
+const maxFeatured = () => FEATURED_BASE;
 const itemAge = it => S.day - (it.since || S.day);
 
 function marginHTML(it) {
@@ -436,6 +441,12 @@ function moveBtns(it, pos) {
     <button data-action="move" data-uid="${it.uid}" data-dir="1" aria-label="Mover después"${pos.last ? ' disabled' : ''}>▶</button></span>`;
 }
 
+const lockBtn = it => {
+  const on = !!it.locked;
+  const label = on ? 'Desbloquear: volver a ponerla a la venta' : 'Bloquear: no se vende y mantiene la fama';
+  return `<button class="lock${on ? ' on' : ''}" data-action="lock" data-uid="${it.uid}" aria-pressed="${on}" aria-label="${label}" title="${label}">${on ? '🔒' : '🔓'}</button>`;
+};
+
 const miniPrice = it => `<button class="price-btn mini" data-action="editprice" data-uid="${it.uid}" aria-label="Cambiar precio"><b>${fmt(it.listPrice)}</b><span>✎</span></button>`;
 const authBtn = (it, cls = '') => (it.verified ? '' : `<button class="btn ${cls}" data-action="auth" data-uid="${it.uid}">Autenticar (${fmt(AUTH_COST)})</button>`);
 
@@ -448,9 +459,10 @@ function shopCard(it, pos) {
       ${itemHead(it)}
       <p class="seller">Pagaste ${fmt(it.paid)} · Margen ${marginHTML(it)} · ${itemAge(it)} d</p>
       <button class="price-btn" data-action="editprice" data-uid="${it.uid}"><small>Tu precio</small><b>${fmt(it.listPrice)}</b><span>✎ Cambiar</span></button>
+      ${typeof restoreBar === 'function' ? restoreBar(it) : ''}
       <div class="actions">
         ${moveBtns(it, pos)}
-        ${authBtn(it)}
+        ${authBtn(it)}${typeof collectBtn === 'function' ? collectBtn(it) : ''}
         <button class="btn" data-action="suggest" data-uid="${it.uid}">Sugerido</button>
       </div>
     </article>`;
@@ -461,12 +473,12 @@ function shopRow(it, pos) {
   const kit = kitOf(it);
   return `
     <article class="row r${kit.rarity}" data-uid="${it.uid}">
-      <div class="thumb">${kitImage(kit)}</div>
+      <div class="thumb">${kitImage(kit, it)}</div>
       <div class="row-main">
         <h3>${kit.team} ${kit.year} <small>${kit.type}</small></h3>
         <div class="chips"><span class="chip size">${it.size}</span><span class="chip">${COND[it.cond].label}</span>${authChip(it)}${trendChip(kit)}${fameChip(it)}</div>
         <p class="seller">Pagaste ${fmt(it.paid)} · ${marginHTML(it)} · ${itemAge(it)} d</p>
-        ${authBtn(it, 'sm')}
+        ${authBtn(it, 'sm')}${typeof collectBtn === 'function' ? collectBtn(it, 'sm') : ''}${typeof restoreBtn === 'function' ? restoreBtn(it, 'sm') : ''}
       </div>
       <div class="row-side">
         ${miniPrice(it)}
@@ -479,15 +491,15 @@ function shopRow(it, pos) {
 function shopTile(it, pos, hero) {
   const kit = kitOf(it);
   return `
-    <article class="tile r${kit.rarity}${hero ? ' hero' : ''}" data-uid="${it.uid}">
+    <article class="tile r${kit.rarity}${hero ? ' hero' : ''}${it.locked ? ' locked' : ''}" data-uid="${it.uid}">
       ${starBtn(it, true)}
       <span class="rar-tag r${kit.rarity}">${hero ? '⭐ ' : ''}${hero ? 'Pieza estrella' : RARITY_LABELS[kit.rarity]}</span>
-      <div class="thumb">${kitImage(kit)}${it.special ? '<span class="signed">Firmada</span>' : ''}</div>
+      <div class="thumb">${kitImage(kit, it)}${it.special ? '<span class="signed">Firmada</span>' : ''}${it.locked ? '<span class="lock-flag">🔒 No se vende</span>' : ''}</div>
       <div class="plate">
         <h3>${kit.team} ${kit.year}</h3>
         <p class="sub">${kit.type} · Talla ${it.size} · ${COND[it.cond].label}${hero ? ` · ${RARITY_LABELS[kit.rarity]}` : ''}</p>
       </div>
-      <div class="tile-price">${miniPrice(it)}</div>
+      <div class="tile-price">${miniPrice(it)}${lockBtn(it)}</div>
       <div class="tile-foot">${moveBtns(it, pos)}<span class="seller">${marginHTML(it)}</span></div>
     </article>`;
 }
@@ -547,7 +559,7 @@ function showcaseHTML() {
     <div class="sc-window">
       <div class="showcase-head">
         <div><h3>🪟 Escaparate</h3><small class="sc-tier">${tierName}</small></div>
-        <div class="sc-meta"><span class="sc-boost" title="Las piezas del escaparate puntúan más fama">×1,5 fama</span><small>${items.length}/${slots} expuestas</small></div>
+        <div class="sc-meta"><span class="sc-boost" title="Las piezas del escaparate puntúan más fama">×1,5 fama</span><small>${items.length}/${slots} expuestas${items.some(i => i.locked) ? ` · 🔒 ${items.filter(i => i.locked).length}` : ''}</small></div>
       </div>
       <div class="showcase-grid">${tiles}${empty}</div>
       <div class="sc-floor" aria-hidden="true"></div>
@@ -564,10 +576,22 @@ function toggleFeature(uid) {
   uid = Number(uid);
   if (S.featured.includes(uid)) {
     S.featured = S.featured.filter(x => x !== uid);
+    const it = S.stock.find(x => x.uid === uid);
+    if (it) it.locked = false;   // fuera del escaparate, vuelve a estar a la venta
   } else {
-    if (featuredItems().length >= maxFeatured()) { toast(`El escaparate está lleno (${maxFeatured()}). Amplía la tienda para destacar más.`); return; }
+    if (featuredItems().length >= maxFeatured()) { toast(`El escaparate admite ${maxFeatured()} camisetas como máximo. Quita una para poner otra.`); return; }
     S.featured.push(uid);
   }
+  save(); renderAll();
+}
+
+// Bloquear una pieza del escaparate: no se vende, pero sigue sumando fama
+function toggleLock(uid) {
+  uid = Number(uid);
+  const it = S.stock.find(x => x.uid === uid);
+  if (!it || !S.featured.includes(uid)) return;
+  it.locked = !it.locked;
+  toast(it.locked ? 'Bloqueada: no se venderá y sigue sumando fama.' : 'Desbloqueada: vuelve a estar a la venta.');
   save(); renderAll();
 }
 
@@ -640,12 +664,12 @@ function renderMarket() {
 function packCard(p) {
   const src = PACK_SOURCES[p.src];
   const q = packQuote(p, new Set(p.items.map(x => x.item.uid)));
-  const thumbs = p.items.map(x => `<span class="pk-th">${kitImage(kitOf(x.item))}</span>`).join('');
+  const thumbs = p.items.map(x => `<span class="pk-th">${kitImage(kitOf(x.item), x.item)}</span>`).join('');
   return `
     <article class="card pcard">
       <div class="pk-head"><span class="pk-icon">${src.icon}</span><div><h3>${p.name}</h3><p class="mc-sub">${src.label} · ${p.items.length} camisetas</p></div></div>
       <div class="pk-thumbs">${thumbs}</div>
-      <div class="mc-pills"><span class="chip hot">Hasta −${Math.round(q.d * 100)} %</span><span class="chip ${src.tagCls}">${src.tag}</span></div>
+      <div class="mc-pills"><span class="chip hot">Hasta −${Math.round(q.d * 100)} %</span><span class="chip ${src.tagCls}">${src.tag}</span>${typeof packOwnedChip === 'function' ? packOwnedChip(p) : ''}</div>
       <p class="pk-line">Lote completo <b>${fmt(q.total)}</b> <s>${fmt(q.full)}</s></p>
       <div class="actions"><button class="btn primary" data-action="pack" data-id="${p.id}">Ver lote</button></div>
     </article>`;
@@ -705,12 +729,11 @@ function renderShop(f = fame()) {
 }
 
 function renderCollection(f) {
-  const sets = f.sets.map(c => `<li class="${c.done ? 'up' : ''}"><span>${c.icon}</span><b>${c.name}</b><small>${c.desc}</small><em>${Math.min(c.n, c.need)}/${c.need} · ${c.done ? '+' : ''}${c.bonus} pts</em></li>`).join('');
+  // Los conjuntos (Leyendas, Años 90…) se ven en la pestaña Colección; aquí solo el resumen de fama
   const top = f.items.filter(x => x.pts >= 1).sort((a, b) => b.pts - a.pts).slice(0, 5)
-    .map(x => `<li><b>${title(x.it)}</b><small>Talla ${x.it.size}${S.featured.includes(x.it.uid) ? ' · en escaparate' : ''}</small><em>+${Math.round(x.pts * 10) / 10}</em></li>`).join('');
+    .map(x => `<li><b>${title(x.it)}</b><small>Talla ${x.it.size}${x.it.collected ? ' · en colección' : S.featured.includes(x.it.uid) ? ' · en escaparate' : ''}</small><em>+${Math.round(x.pts * 10) / 10}</em></li>`).join('');
   $('#fame-box').innerHTML = `
-    <p class="sub">Fama total: <b>${f.score}</b> (piezas ${Math.round(f.base)} + colecciones ${f.bonus}). Completa colecciones para sumar puntos extra.</p>
-    <ul class="trend-list fame-sets">${sets}</ul>
+    <p class="sub">Fama total: <b>${f.score}</b> (piezas ${Math.round(f.base)} + conjuntos ${f.bonus}). Completa conjuntos en la pestaña <b>Colección</b> para sumar puntos extra.</p>
     <h4 class="fame-sub">Tus piezas estrella</h4>
     <ul class="trend-list">${top || '<li>Aún no tienes piezas que aporten fama: busca raras y legendarias.</li>'}</ul>`;
 }
@@ -741,6 +764,7 @@ function renderTrends() {
 function renderAll() {
   // limpia del escaparate lo que ya no está en stock o no cabe
   S.featured = S.featured.filter(uid => S.stock.some(i => i.uid === uid)).slice(0, maxFeatured());
+  S.stock.forEach(it => { if (it.locked && !S.featured.includes(it.uid)) it.locked = false; });
   const f = fame();
   if (S.fameTier != null && f.tier !== S.fameTier) {
     const msg = f.tier > S.fameTier
@@ -752,6 +776,7 @@ function renderAll() {
   renderHeader(f);
   renderMarket();
   renderShop(f);
+  if (typeof renderCollectionTab === 'function') renderCollectionTab(f);
   renderPanel(f);
 }
 
@@ -894,6 +919,11 @@ async function endDay(report) {
     S.money += visitIncome;
     lines.push(`<li>🏛️ Visitas a tu colección (${FAME_TIERS[fm.tier].name}): <b>+${fmt(visitIncome)}</b></li>`);
   }
+  const mu = typeof museumInfo === 'function' ? museumInfo() : null;
+  if (mu && mu.income > 0) {
+    S.money += mu.income;
+    lines.push(`<li>📚 Entradas a tu colección (${mu.name}): <b>+${fmt(mu.income)}</b></li>`);
+  }
   if (report.fameLost >= 1) {
     lines.push(`<li class="neg">Las ventas de hoy te han restado ${report.fameLost} puntos de fama.</li>`);
   }
@@ -956,6 +986,7 @@ async function intro() {
         <li>Las valoraciones son estimaciones. Si dudas, <b>autentica</b>: hay réplicas.</li>
         <li>Fija tu precio en <b>Tienda</b> y pulsa «Abrir tienda» para atender clientes.</li>
         <li>En <b>Tienda</b> pon tus mejores piezas en el escaparate con ⭐ (los clientes las ven antes) y ordénalas con ◀ ▶. Ojo: los clientes piden una talla concreta.</li>
+        <li>En <b>Colección</b> aparta tus camisetas <b>originales</b> (autenticadas) para exponerlas: no se venden y, cuanto mejor estado, más puntos, fama y entradas diarias.</li>
         <li>Cada día pagas ${fmt(RENT)} de alquiler. Objetivo: ${fmt(GOAL)} de patrimonio.</li>
       </ul>
       <div class="actions"><button class="btn primary" data-choice="ok">Empezar</button></div>
@@ -995,8 +1026,10 @@ function bind() {
     }
     else if (a === 'pack') openPack(Number(b.dataset.id));
     else if (a === 'auth') authStock(b.dataset.uid);
+    else if (a === 'restore') openRestore(b.dataset.uid);
     else if (a === 'filter') { S.view.filter = S.view.filter === b.dataset.f ? 'all' : b.dataset.f; save(); renderAll(); }
     else if (a === 'feature') toggleFeature(b.dataset.uid);
+    else if (a === 'lock') toggleLock(b.dataset.uid);
     else if (a === 'move') moveItem(b.dataset.uid, b.dataset.dir);
     else if (a === 'mode') { S.view.mode = b.dataset.mode; save(); renderAll(); }
     else if (a === 'editprice') editPrice(b.dataset.uid);
@@ -1023,6 +1056,7 @@ function init() {
   S = load() || newGame();
   S.busy = false;
   S.featured = S.featured || []; S.sizeLost = S.sizeLost || {};
+  S.collection = S.collection || []; S.cview = S.cview || { sort: 'cond', filter: 'all' };
   if (!S.packs) S.packs = genPacks();
   if (!S.view || !S.view.v3) S.view = { filter: 'all', sort: 'manual', mode: 'cards', v3: true }; S.marketSort = S.marketSort || 'ganga';
   bind();

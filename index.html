@@ -32,6 +32,7 @@
   <nav class="tabs" aria-label="Secciones">
     <button class="active" data-tab="market">🛒 Mercado</button>
     <button data-tab="shop">👕 Tienda</button>
+    <button data-tab="collection">📚 Colección</button>
     <button data-tab="panel">📊 Panel</button>
   </nav>
 
@@ -63,10 +64,28 @@
       <div id="shop-grid" class="grid"></div>
     </section>
 
+    <section id="tab-collection" class="tab">
+      <div class="section-head">
+        <div>
+          <h2>📚 Tu colección</h2>
+          <p id="coll-sub" class="sub"></p>
+        </div>
+      </div>
+      <div id="coll-hero" class="cv-hero"></div>
+      <h3 class="block-title">🧩 Conjuntos</h3>
+      <div id="coll-sets" class="cv-sets"></div>
+      <div id="coll-tools" class="cv-tools"></div>
+      <h3 id="coll-title" class="block-title"></h3>
+      <div id="coll-vitrine" class="cv-grid"></div>
+      <h3 class="block-title">📦 Del almacén a la vitrina</h3>
+      <p class="sub">Solo se coleccionan originales autenticadas. Al coleccionarlas dejan de estar a la venta y liberan percha.</p>
+      <div id="coll-cands"></div>
+    </section>
+
     <section id="tab-panel" class="tab">
       <div class="section-head"><h2>📊 Panel del negocio</h2></div>
       <div id="panel-stats" class="panel-stats"></div>
-      <h3 class="block-title">🏛️ Colección y fama</h3>
+      <h3 class="block-title">🏛️ Fama de la tienda</h3>
       <div id="fame-box" class="fame-box"></div>
       <h3 class="block-title">📈 Tendencias del mercado</h3>
       <ul id="trend-list" class="trend-list"></ul>
@@ -89,5 +108,7 @@
   <script src="core.js"></script>
   <script src="camisetas.js"></script>
   <script src="negociacion.js"></script>
+  <script src="restauracion.js"></script>
+  <script src="coleccion.js"></script>
 </body>
 </html>
