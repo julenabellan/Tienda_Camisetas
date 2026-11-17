@@ -125,7 +125,7 @@ async function editPrice(uid) {
   const est = estimate(it), sug = suggestedPrice(it);
   const max = Math.max(it.listPrice, est.high, it.paid, sug) * 1.3;
   const r = await dialog(`<div class="neg negx">
-    <div class="neg-head"><div class="thumb sm">${kitImage(kitOf(it))}</div>
+    <div class="neg-head"><div class="thumb sm">${kitImage(kitOf(it), it)}</div>
       <div><h3>${title(it)} · ${kitOf(it).type}</h3><p class="sub">Talla ${it.size} · ${COND[it.cond].label}</p><p class="est">Valoración: <b>${estimateText(it)}</b></p></div></div>
     ${trackHTML(max, est, [{ cls: 'cost', label: 'Pagaste', v: it.paid }, { id: 'pin-you', cls: 'you', label: 'Tu precio', v: it.listPrice }])}
     ${fieldHTML('Tu precio', it.listPrice)}
@@ -149,7 +149,7 @@ function sellerDialogHTML(offer, msg) {
   return `
     <div class="neg negx">
       <div class="neg-head">
-        <div class="thumb sm">${kitImage(kitOf(it))}</div>
+        <div class="thumb sm">${kitImage(kitOf(it), it)}</div>
         <div>
           <h3>${title(it)} · ${kitOf(it).type}</h3>
           <p class="sub">${COND[it.cond].label} · Talla ${it.size}${sizeCount(it.size) === 0 ? ' · 🧩 te falta' : ''}</p>
@@ -268,7 +268,7 @@ function packDialogHTML(pack, sel, msg) {
     const need = sizeCount(it.size) === 0 ? '<span class="chip warn">🧩 Te falta</span>' : '';
     return `<button class="pk-row${on ? ' on' : ''}" data-choice="toggle:${it.uid}" aria-pressed="${on}">
       <span class="pk-check">${on ? '✔' : ''}</span>
-      <span class="thumb sm">${kitImage(kit)}</span>
+      <span class="thumb sm">${kitImage(kit, it)}</span>
       <span class="pk-info"><b>${kit.team} ${kit.year}</b>
         <small>${kit.type} · Talla ${it.size} · ${COND_SHORT[it.cond] || COND[it.cond].label}</small>
         <small>Valoración ${estimateText(it)}</small>
@@ -352,24 +352,25 @@ async function openPack(packId) {
 
 // ---------- Clientes ----------
 function genCustomer() {
+  const stock = S.stock.filter(it => !it.locked);   // las piezas bloqueadas del escaparate no se venden
   const type = weighted(Object.keys(CUSTOMER_TYPES), t => CUSTOMER_TYPES[t].weight);
   const c = { type, name: pick(NAMES), ...CUSTOMER_TYPES[type] };
   c.size = weighted(SIZE_ORDER, z => SIZE_DEMAND[z]);
   c.sizeFree = type === 'bargain';       // el cazador de gangas no mira la talla
   let candidates = [];
   if (type === 'fan') {
-    const teams = [...new Set(S.stock.map(it => kitOf(it).team))];
+    const teams = [...new Set(stock.map(it => kitOf(it).team))];
     const allTeams = [...new Set(KITS.map(x => x.team))];
     c.team = Math.random() < 0.75 ? pick(teams) : pick(allTeams);
-    candidates = S.stock.filter(it => kitOf(it).team === c.team);
+    candidates = stock.filter(it => kitOf(it).team === c.team);
   } else if (type === 'collector') {
-    candidates = S.stock.filter(it => kitOf(it).rarity >= 3 || it.special);
+    candidates = stock.filter(it => kitOf(it).rarity >= 3 || it.special);
   } else if (type === 'nostalgic') {
-    candidates = S.stock.filter(it => kitOf(it).year <= 2000);
+    candidates = stock.filter(it => kitOf(it).year <= 2000);
   } else if (type === 'bargain') {
-    candidates = [S.stock.slice().sort((a, b) => a.listPrice / perceivedValue(a) - b.listPrice / perceivedValue(b))[0]];
+    candidates = stock.length ? [stock.slice().sort((a, b) => a.listPrice / perceivedValue(a) - b.listPrice / perceivedValue(b))[0]] : [];
   } else {
-    candidates = S.stock.slice();
+    candidates = stock.slice();
   }
   const star = i => (S.featured.includes(i.uid) ? 3 : 1);   // lo destacado se ve antes
   let item = null;
@@ -436,7 +437,7 @@ function haggleHTML(c, it, offer, listPrice, msg, final, round) {
   return `
     <div class="neg negx">
       <div class="neg-head">
-        <div class="thumb sm">${kitImage(kitOf(it))}</div>
+        <div class="thumb sm">${kitImage(kitOf(it), it)}</div>
         <div>
           <h3>${title(it)} · ${kitOf(it).type}</h3>
           <p class="sub">${COND[it.cond].label} · Talla ${it.size}</p>

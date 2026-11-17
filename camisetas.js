@@ -161,7 +161,55 @@ function brandLogoDrawn(kit, inkOverride) {
   }
 }
 
-function shirtSVG(kit) {
+// ---------- Firmas ----------
+// Garabato que imita una firma a mano. Sale siempre igual para la misma camiseta (depende de su uid)
+// y va en un sitio distinto en cada una: torso o manga, con inclinación propia. Negro o blanco según el fondo.
+function sigRng(seed) {
+  let t = (Math.imul(seed | 0, 2654435761) ^ 0x9E3779B9) >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function signatureSVG(kit, seed) {
+  const r = sigRng(seed);
+  const rr = (a, b) => a + r() * (b - a);
+  const f = n => Math.round(n * 10) / 10;
+  const onSleeve = r() < 0.3;
+  const w = onSleeve ? rr(22, 28) : rr(40, 54);
+  const h = onSleeve ? rr(9, 12) : rr(13, 19);
+  let x, y, rot;
+  if (onSleeve) {
+    const left = r() < 0.5;
+    x = left ? rr(14, 22) : rr(158, 166); y = left ? rr(52, 60) : rr(50, 58);
+    rot = left ? rr(28, 40) : rr(-40, -28);
+  } else {
+    x = rr(56, 146 - w); y = rr(100, 164 - h); rot = rr(-26, 16);
+  }
+  // trazo: lazo inicial, ondas de distinta altura y, a veces, subrayado
+  const n = 4 + Math.floor(r() * 3);
+  const step = w / n;
+  let d = `M0 ${f(h * 0.8)} c${f(-3)} ${f(-h * 0.9)} ${f(h * 0.6)} ${f(-h * 0.9)} ${f(h * 0.35)} ${f(h * 0.15)}`;
+  let cx = h * 0.35;
+  for (let i = 1; i <= n; i++) {
+    const nx = i * step;
+    const peak = r() < 0.5 ? rr(-h * 0.1, h * 0.3) : rr(h * 1.0, h * 1.35);
+    d += ` Q${f((cx + nx) / 2)} ${f(peak)} ${f(nx)} ${f(rr(h * 0.45, h * 0.95))}`;
+    cx = nx;
+  }
+  if (r() < 0.55) d += ` M${f(w * 0.05)} ${f(h * 1.35)} Q${f(w * 0.5)} ${f(h * 1.05)} ${f(w * 1.02)} ${f(h * 1.25)}`;
+  // tinta: la que más contraste da con el color base (blanco o negro)
+  const ink = lum(kit.c1) > 0.5 ? '#111111' : '#FFFFFF';
+  const halo = ink === '#111111' ? '#FFFFFF' : '#000000';
+  return `<g class="signature" transform="translate(${f(x)} ${f(y)}) rotate(${f(rot)})" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
+    `<path d="${d}" stroke="${halo}" stroke-opacity=".35" stroke-width="3.6"/>` +
+    `<path d="${d}" stroke="${ink}" stroke-width="1.9" stroke-opacity=".95"/></g>`;
+}
+
+function shirtSVG(kit, sigSeed) {
   const id = 'cl' + (svgCount++);
   const body = 'M70 20 L40 32 L8 70 L34 92 L52 78 L52 180 L148 180 L148 78 L166 92 L192 70 L160 32 L130 20 Q100 44 70 20 Z';
   const c1 = kit.c1, c2 = kit.c2;
@@ -252,6 +300,7 @@ function shirtSVG(kit) {
       ${pat}
       ${brandTrim(kit)}
       <rect width="200" height="200" fill="url(#${id}g)"/>
+      ${sigSeed != null ? signatureSVG(kit, sigSeed) : ''}
     </g>
     ${collarSVG(kit)}
     <path d="M8 70 L34 92 M192 70 L166 92" stroke="${c2}" stroke-width="5" stroke-linecap="round"/>
@@ -262,16 +311,18 @@ function shirtSVG(kit) {
   </svg>`;
 }
 
-function kitImage(kit) {
-  if (kit.img) return `<img src="${kit.img}" alt="Camiseta ${kit.team} ${kit.year}" data-kit="${kit.id}" loading="lazy">`;
-  return shirtSVG(kit);
+// it (opcional): si la pieza es firmada (it.special), se dibuja su firma
+function kitImage(kit, it) {
+  const seed = it && it.special ? it.uid : null;
+  if (kit.img) return `<img src="${kit.img}" alt="Camiseta ${kit.team} ${kit.year}" data-kit="${kit.id}"${seed != null ? ` data-sig="${seed}"` : ''} loading="lazy">`;
+  return shirtSVG(kit, seed);
 }
 
 document.addEventListener('error', e => {
   const t = e.target;
   if (t && t.tagName === 'IMG' && t.dataset.kit) {
     const tmp = document.createElement('div');
-    tmp.innerHTML = shirtSVG(KIT_BY_ID[t.dataset.kit]);
+    tmp.innerHTML = shirtSVG(KIT_BY_ID[t.dataset.kit], t.dataset.sig != null ? Number(t.dataset.sig) : null);
     t.replaceWith(tmp.firstElementChild);
   }
 }, true);
