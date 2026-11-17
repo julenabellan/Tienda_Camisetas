@@ -111,6 +111,8 @@ function logoSpot(kit) {
     });
     spot.cx = bestX; spot.bg = kit.c2;
     spot.w = STRIPE_LOGO; spot.h = STRIPE_LOGO; spot.k = STRIPE_LOGO / LOGO_W;
+  } else if (kit.pattern === 'panel') {
+    spot.bg = kit.c2;   // el logo (pecho izquierdo del dibujo) queda sobre el panel
   } else if (kit.pattern === 'sash') {
     // banda diagonal c2 de (58,24) a (150,172): el logo cae encima de ella, así que se centra en su eje,
     // se encoge para que no se salga por los bordes y se tiñe contrastando con la banda (no con el fondo base)
@@ -228,6 +230,13 @@ function shirtSVG(kit, sigSeed) {
     case 'halves':
       pat = `<rect x="0" y="0" width="100" height="200" fill="${c2}"/>`;
       break;
+    case 'panel': {
+      // panel grande c2 en el costado izquierdo (visto de frente), con 3 rayitas c3 paralelas a su borde (España 1996)
+      const c3 = kit.c3 || c2;
+      pat = `<polygon points="-10,-10 104,-10 88,210 -10,210" fill="${c2}"/>` +
+            [10, 18, 26].map(d => `<line x1="${104 - d}" y1="-10" x2="${88 - d}" y2="210" stroke="${c3}" stroke-width="3.4"/>`).join('');
+      break;
+    }
     case 'sash':
       pat = `<line x1="58" y1="24" x2="150" y2="172" stroke="${c2}" stroke-width="28"/>`;
       break;
