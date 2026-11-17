@@ -271,7 +271,7 @@ const KITS = [
   k('Real Madrid', 2008, 'Visitante', 'Adidas', 150, 2, '#3B0066', '#FFFFFF', 'solid'),
   k('Real Madrid', 2011, 'Local', 'Adidas', 240, 4, '#FFFFFF', '#FFD700', 'solid'),
   k('Real Madrid', 2011, 'Visitante', 'Adidas', 220, 4, '#C8102E', '#FFFFFF', 'solid'),
-  k('Real Madrid', 2014, 'Tercera', 'Adidas', 190, 3, '#111111', '#00E5FF', 'solid'),
+  k('Real Madrid', 2014, 'Tercera', 'Adidas', 190, 3, '#111111', '#FFFFFF', 'solid'),
   k('Real Madrid', 2016, 'Visitante', 'Adidas', 130, 2, '#6A2C91', '#FFFFFF', 'solid'),   // KA: Plain, Purple / White (16-17)
   k('Real Madrid', 2017, 'Local', 'Adidas', 60, 1, '#FFFFFF', '#1B2A6B', 'solid'),
   k('Real Madrid', 2017, 'Tercera', 'Adidas', 190, 3, '#1BB5B0', '#14235E', 'solid'),   // KA: Graphic, Sky blue / Black / White (turquesa, 17-18)
