@@ -211,7 +211,18 @@ function signatureSVG(kit, seed) {
     `<path d="${d}" stroke="${ink}" stroke-width="1.9" stroke-opacity=".95"/></g>`;
 }
 
-function shirtSVG(kit, sigSeed) {
+// Detalles de las Player: textura de malla tono sobre tono (se ve en cualquier color) y etiqueta dorada en el cuello
+function playerTextureSVG(id) {
+  return `<pattern id="${id}p" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">` +
+    `<rect width="3" height="3" fill="#000" fill-opacity=".10"/><rect x="3" y="3" width="3" height="3" fill="#fff" fill-opacity=".11"/></pattern>`;
+}
+function playerNeckTag(id) {
+  return `<linearGradient id="${id}t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#d9a514"/></linearGradient>` +
+    `<g class="player-tag"><rect x="92.5" y="21" width="15" height="7.5" rx="1.6" fill="url(#${id}t)" stroke="rgba(0,0,0,.55)" stroke-width=".8"/>` +
+    `<path d="M95.5 24 H104.5 M96.5 26.2 H103.5" stroke="rgba(60,40,0,.7)" stroke-width=".9" stroke-linecap="round"/></g>`;
+}
+
+function shirtSVG(kit, sigSeed, player) {
   const id = 'cl' + (svgCount++);
   const body = 'M70 20 L40 32 L8 70 L34 92 L52 78 L52 180 L148 180 L148 78 L166 92 L192 70 L160 32 L130 20 Q100 44 70 20 Z';
   const c1 = kit.c1, c2 = kit.c2;
@@ -295,7 +306,7 @@ function shirtSVG(kit, sigSeed) {
       break;
     default: break;
   }
-  return `<svg class="shirt" viewBox="0 0 200 200" role="img" aria-label="Camiseta ${kit.team} ${kit.year}" xmlns="http://www.w3.org/2000/svg">
+  return `<svg class="shirt" viewBox="0 0 200 200" role="img" aria-label="Camiseta ${kit.team} ${kit.year}${player ? ' (Player)' : ''}" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <clipPath id="${id}"><path d="${body}"/></clipPath>
       <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1">
@@ -303,15 +314,18 @@ function shirtSVG(kit, sigSeed) {
         <stop offset=".6" stop-color="#fff" stop-opacity="0"/>
         <stop offset="1" stop-color="#000" stop-opacity=".18"/>
       </linearGradient>
+      ${player ? playerTextureSVG(id) : ''}
     </defs>
     <g clip-path="url(#${id})">
       <rect width="200" height="200" fill="${c1}"/>
       ${pat}
       ${brandTrim(kit)}
       <rect width="200" height="200" fill="url(#${id}g)"/>
+      ${player ? `<rect width="200" height="200" fill="url(#${id}p)"/>` : ''}
       ${sigSeed != null ? signatureSVG(kit, sigSeed) : ''}
     </g>
     ${collarSVG(kit)}
+    ${player ? playerNeckTag(id) : ''}
     <path d="M8 70 L34 92 M192 70 L166 92" stroke="${c2}" stroke-width="5" stroke-linecap="round"/>
     ${crestSVG(kit)}
     ${brandLogo(kit, id)}
@@ -323,15 +337,16 @@ function shirtSVG(kit, sigSeed) {
 // it (opcional): si la pieza es firmada (it.special), se dibuja su firma
 function kitImage(kit, it) {
   const seed = it && it.special ? it.uid : null;
-  if (kit.img) return `<img src="${kit.img}" alt="Camiseta ${kit.team} ${kit.year}" data-kit="${kit.id}"${seed != null ? ` data-sig="${seed}"` : ''} loading="lazy">`;
-  return shirtSVG(kit, seed);
+  const player = !!(it && typeof isPlayer === 'function' && isPlayer(it));
+  if (kit.img) return `<img src="${kit.img}" alt="Camiseta ${kit.team} ${kit.year}" data-kit="${kit.id}"${seed != null ? ` data-sig="${seed}"` : ''}${player ? ' data-player="1"' : ''} loading="lazy">`;
+  return shirtSVG(kit, seed, player);
 }
 
 document.addEventListener('error', e => {
   const t = e.target;
   if (t && t.tagName === 'IMG' && t.dataset.kit) {
     const tmp = document.createElement('div');
-    tmp.innerHTML = shirtSVG(KIT_BY_ID[t.dataset.kit], t.dataset.sig != null ? Number(t.dataset.sig) : null);
+    tmp.innerHTML = shirtSVG(KIT_BY_ID[t.dataset.kit], t.dataset.sig != null ? Number(t.dataset.sig) : null, t.dataset.player === '1');
     t.replaceWith(tmp.firstElementChild);
   }
 }, true);

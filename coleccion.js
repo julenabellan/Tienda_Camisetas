@@ -3,6 +3,8 @@
 // Una pieza coleccionada no se vende, no ocupa percha y sigue sumando fama. Cuanto mejor es su estado,
 // más puntos de colección da, más fama aporta y antes sube tu categoría (que paga entradas cada día).
 // Clic en una pieza de la vitrina → ficha grande con detalle (estado, valor, puntos, fama…).
+// El ÁLBUM de cromos vive en album.js (se carga después de este archivo): aquí solo avisamos cuando entra una pieza
+// (evento «album:collected») y dibujamos el álbum al renderizar la pestaña.
 // Depende de core.js (S, kitOf, estimate, fame, dialog…) y de camisetas.js (kitImage). Se carga después de ellos.
 'use strict';
 (() => {
@@ -61,6 +63,7 @@
     it.collected = true;
     it.collectedDay = S.day;
     collectionOf().push(it);
+    document.dispatchEvent(new CustomEvent('album:collected', { detail: { uid: it.uid, kitId: it.kitId } }));   // → album.js
     log(`📚 Colocas ${title(it)} en tu colección (${COLLECT_GRADE[it.cond].label}).`);
     toast(`📚 ${title(it)} entra en tu colección: ya no está a la venta.`);
     save(); renderAll();
@@ -233,7 +236,7 @@
         <div class="cv-cand-main">
           <h4>${title(it)}</h4>
           <p>${kit.type} · Talla ${it.size}</p>
-          <div class="cv-cand-meta">${gradeBadge(it)}${it.special ? '<span class="cv-signed-tag">✍️ Firmada</span>' : ''}<small>${ok ? `+${num(collectPts(it))} pts` : 'Sin autenticar'}</small></div>
+          <div class="cv-cand-meta">${gradeBadge(it)}${it.special ? '<span class="cv-signed-tag">✍️ Firmada</span>' : ''}${typeof window.albumTag === 'function' ? window.albumTag(it) : ''}<small>${ok ? `+${num(collectPts(it))} pts` : 'Sin autenticar'}</small></div>
         </div>
         ${ok
           ? `<button class="btn primary sm" data-action="collect" data-uid="${it.uid}">Coleccionar</button>`
@@ -328,6 +331,7 @@
       ? `${list.length} ${list.length === 1 ? 'pieza original' : 'piezas originales'} · ${m.name}`
       : 'Aparta tus mejores originales de la venta y exhíbelas aquí';
     $('#coll-hero').innerHTML = heroHTML(m);
+    if (typeof window.renderAlbum === 'function') window.renderAlbum();   // álbum de cromos (album.js)
     $('#coll-sets').innerHTML = setsHTML(f);
     $('#coll-tools').innerHTML = toolsHTML(list);
     $('#coll-title').textContent = `🗄️ Vitrina (${shown.length}${shown.length !== list.length ? ` de ${list.length}` : ''})`;

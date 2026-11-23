@@ -20,6 +20,15 @@ const PEEL_RISK = 0.15;     // prob. de que se despegue el estampado al lavar
 const REPAIR_ODDS = { ok: 0.75, nothing: 0.15 };   // el resto: arreglo chapucero
 const FRAME_OK = 0.94;
 
+// Las Player (desde 1991) son más delicadas: se despegan más, los arreglos salen peor y recuperarlas cuesta más
+const PEEL_RISK_PLAYER = 0.25;                                  // prob. de que se despegue el estampado al lavar
+const REPAIR_ODDS_PLAYER = { ok: 0.70, nothing: 0.15 };         // el resto (15 %): arreglo chapucero
+const PLAYER_COST_MULT = { usada: 1.6, buena: 1.3 };            // recargo de los servicios en mal estado (muy usada / buen estado)
+const isPlayerKit = it => typeof isPlayer === 'function' && isPlayer(it);
+const peelRisk = it => (isPlayerKit(it) ? PEEL_RISK_PLAYER : PEEL_RISK);
+const repairOdds = it => (isPlayerKit(it) ? REPAIR_ODDS_PLAYER : REPAIR_ODDS);
+const svcCost = (it, svc) => Math.round(RESTORE[svc].cost * (isPlayerKit(it) ? (PLAYER_COST_MULT[it.cond] || 1) : 1));
+
 // ---------- Defectos (deterministas por uid) ----------
 function restoreRng(seed) {
   let t = seed >>> 0;
@@ -56,16 +65,17 @@ function svcState(it, svc) {
     if (!fl.stain) return { ok: false, reason: 'No tiene manchas.' };
     const p = WASH_OK[it.cond] || 0.7;
     const odds = [`<span class="odd good">${pct(p)} sale la mancha</span>`, `<span class="odd bad">${pct(1 - p)} no sale</span>`];
-    if (fl.print && !it.peeled) odds.push(`<span class="odd warn">${pct(PEEL_RISK)} se despega el dorsal</span>`);
+    if (fl.print && !it.peeled) odds.push(`<span class="odd warn">${pct(peelRisk(it))} se despega el dorsal</span>`);
     return { ok: true, desc: 'Quita las manchas. Con todos los defectos resueltos, la camiseta sube de estado.', odds: odds.join('') };
   }
   if (svc === 'repair') {
     if (!fl.tear) return { ok: false, reason: 'No tiene costuras sueltas ni desgarros.' };
-    const bad = 1 - REPAIR_ODDS.ok - REPAIR_ODDS.nothing;
+    const ro = repairOdds(it);
+    const bad = 1 - ro.ok - ro.nothing;
     return {
       ok: true,
       desc: 'Arregla costuras y desgarros. Con todos los defectos resueltos, sube de estado.',
-      odds: `<span class="odd good">${pct(REPAIR_ODDS.ok)} sale bien</span><span class="odd bad">${pct(REPAIR_ODDS.nothing)} no aguanta</span><span class="odd warn">${pct(bad)} arreglo chapucero</span>`,
+      odds: `<span class="odd good">${pct(ro.ok)} sale bien</span><span class="odd bad">${pct(ro.nothing)} no aguanta</span><span class="odd warn">${pct(bad)} arreglo chapucero</span>`,
     };
   }
   if (it.framed) return { ok: false, reason: 'Ya está enmarcada.' };
@@ -108,8 +118,9 @@ function applyRestore(it, svc) {
   const st = svcState(it, svc);
   if (!st.ok) return { error: st.reason };
   const def = RESTORE[svc];
-  if (S.money < def.cost) return { error: 'No tienes caja para eso.' };
-  S.money -= def.cost;
+  const cost = svcCost(it, svc);
+  if (S.money < cost) return { error: 'No tienes caja para eso.' };
+  S.money -= cost;
 
   const wasSuggested = it.listPrice === suggestedPrice(it);
   const fl = it.flaws = { ...flawsOf(it) };
@@ -121,7 +132,7 @@ function applyRestore(it, svc) {
     const ok = Math.random() < (WASH_OK[it.cond] || 0.7);
     if (ok) { fl.stain = false; lines.push('La mancha ha salido.'); title = 'Bien lavada'; }
     else { lines.push('Las manchas no han salido. Pierdes lo que costó el lavado.'); tone = 'bad'; title = 'Siguen las manchas'; }
-    if (fl.print && !it.peeled && Math.random() < PEEL_RISK) {
+    if (fl.print && !it.peeled && Math.random() < peelRisk(it)) {
       it.peeled = true;
       lines.push('Se ha despegado parte del nombre y del dorsal. Pierde valor.');
       tone = ok ? 'mixed' : 'bad';
@@ -129,8 +140,9 @@ function applyRestore(it, svc) {
     }
   } else if (svc === 'repair') {
     const r = Math.random();
-    if (r < REPAIR_ODDS.ok) { fl.tear = false; lines.push('Costuras y desgarros reparados.'); title = 'Bien reparada'; }
-    else if (r < REPAIR_ODDS.ok + REPAIR_ODDS.nothing) { lines.push('La tela no aguanta el arreglo. Pierdes lo que costó la reparación.'); tone = 'bad'; title = 'No se pudo arreglar'; }
+    const ro = repairOdds(it);
+    if (r < ro.ok) { fl.tear = false; lines.push('Costuras y desgarros reparados.'); title = 'Bien reparada'; }
+    else if (r < ro.ok + ro.nothing) { lines.push('La tela no aguanta el arreglo. Pierdes lo que costó la reparación.'); tone = 'bad'; title = 'No se pudo arreglar'; }
     else { fl.tear = false; it.botched = true; lines.push('El arreglo se nota. La camiseta pierde algo de valor.'); tone = 'mixed'; title = 'Arreglo chapucero'; }
   } else {
     if (Math.random() < FRAME_OK) { it.framed = true; lines.push('Ya es una pieza de coleccionista.'); title = 'Enmarcada'; }
@@ -158,12 +170,13 @@ function restoreMenuHTML(it) {
   const rows = RESTORE_ORDER.map(id => {
     const def = RESTORE[id];
     const st = svcState(it, id);
-    const afford = S.money >= def.cost;
+    const cost = svcCost(it, id);
+    const afford = S.money >= cost;
     return `
       <div class="rs-opt${st.ok ? '' : ' off'}">
         <span class="rs-ico">${def.icon}</span>
         <div class="rs-txt">
-          <b>${def.name} <em>${fmt(def.cost)}</em></b>
+          <b>${def.name} <em>${fmt(cost)}${cost > def.cost ? ` <s>${fmt(def.cost)}</s>` : ''}</em></b>
           <p>${st.ok ? st.desc : st.reason}</p>
           ${st.ok ? `<div class="rs-odds">${st.odds}</div>` : ''}
         </div>
@@ -181,6 +194,7 @@ function restoreMenuHTML(it) {
         </div>
       </div>
       <p class="rs-note">Cada pieza solo puede subir un escalón de estado. Si algo sale mal, el dinero no se devuelve.</p>
+      ${isPlayerKit(it) ? `<p class="rs-note rs-player">🎽 Versión Player: tejido técnico más delicado. Más riesgo de que se despegue el dorsal o salga un arreglo chapucero${PLAYER_COST_MULT[it.cond] ? ', y el taller cobra más por piezas en este estado' : ''}.</p>` : ''}
       ${rows}
       <div class="actions"><button class="btn ghost" data-choice="close">Cerrar</button></div>
     </div>`;

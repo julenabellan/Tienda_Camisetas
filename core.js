@@ -7,7 +7,6 @@
 // ---------- Configuración ----------
 const SAVE_KEY = 'camisetasRetroShop_v2';
 const GOAL = 5000;          // patrimonio objetivo
-const RENT = 12;            // alquiler diario
 const AUTH_COST = 15;       // coste de autenticar
 const REFRESH_COST = 10;    // coste de buscar más ofertas
 const LEVEL_XP = [0, 8, 25, 55, 100];
@@ -16,7 +15,7 @@ const SIZE_ORDER = ['S', 'M', 'L', 'XL', 'XXL'];
 const SIZE_WEIGHTS = { S: 14, M: 34, L: 30, XL: 17, XXL: 5 };   // lo que aparece en el mercado
 const SIZE_DEMAND = { S: 12, M: 34, L: 32, XL: 16, XXL: 6 };    // lo que piden los clientes
 const SIZE_MISS = 0.55;     // prob. de que un cliente se vaya si solo tienes tallas vecinas
-const FEATURED_BASE = 3;    // máximo de camisetas en el escaparate (fijo: ampliar la tienda no lo cambia)
+const FEATURED_BASE = 3;    // máximo de camisetas en el escaparate a partir del 3.er local (los dos primeros tienen 1 y 2: ver LOCALES)
 const CONDITIONS = [
   { id: 'nueva', label: 'Nueva con etiquetas', coef: 1.6, w: 8 },
   { id: 'excelente', label: 'Excelente', coef: 1.15, w: 27 },
@@ -24,6 +23,45 @@ const CONDITIONS = [
   { id: 'usada', label: 'Muy usada', coef: 0.5, w: 25 },
 ];
 const COND = Object.fromEntries(CONDITIONS.map(c => [c.id, c]));
+
+// ---------- Locales: progresión de la tienda ----------
+// Empiezas en un localito del barrio y te vas mudando a sitios mejores.
+//   cap = perchas · rent = alquiler diario · cost = lo que pagas al mudarte · minFame = fama mínima (0 = sin requisito)
+//   traffic = clientes extra cada día por estar en mejor zona · showcase = huecos del escaparate (1, 2 y luego 3 fijos)
+const LOCALES = [
+  { id: 'cuchitril', icon: '🏚️', name: 'Cuchitril del barrio', zone: 'Barrio humilde',
+    desc: 'Un bajo diminuto con humedades y una persiana que chirría. Todos empiezan por algún sitio.',
+    cap: 10, rent: 12, cost: 0, minFame: 0, traffic: 0, showcase: 1 },
+  { id: 'reformado', icon: '🏠', name: 'Local reformado', zone: 'Tu barrio',
+    desc: 'Más grande, recién pintado y limpio. Ya parece una tienda de verdad.',
+    cap: 18, rent: 22, cost: 400, minFame: 0, traffic: 0, showcase: 2 },
+  { id: 'zona', icon: '🏘️', name: 'Local en zona buena', zone: 'Barrio comercial',
+    desc: 'Pasa más gente y con más dinero. Escaparate a pie de calle.',
+    cap: 28, rent: 40, cost: 1100, minFame: 6, traffic: 1, showcase: 3 },
+  { id: 'calle', icon: '🏬', name: 'Local en calle comercial', zone: 'Calle comercial',
+    desc: 'Mucho paso y un local amplio con buena luz. Aquí ya compiten contigo.',
+    cap: 40, rent: 65, cost: 2500, minFame: 18, traffic: 2, showcase: 3 },
+  { id: 'centro', icon: '🏙️', name: 'Gran local del centro', zone: 'Centro de la ciudad',
+    desc: 'Dos plantas en pleno centro. Turistas, coleccionistas y curiosos a todas horas.',
+    cap: 55, rent: 100, cost: 5000, minFame: 40, traffic: 3, showcase: 3 },
+  { id: 'insignia', icon: '🏛️', name: 'Tienda insignia', zone: 'Avenida principal',
+    desc: 'Tu nombre en la fachada de la avenida más cara de la ciudad.',
+    cap: 75, rent: 150, cost: 9500, minFame: 75, traffic: 4, showcase: 3 },
+  { id: 'templo', icon: '🏟️', name: 'Templo retro', zone: 'Junto al estadio',
+    desc: 'Un edificio entero junto al estadio. Peregrinación obligada para cualquier aficionado.',
+    cap: 100, rent: 220, cost: 18000, minFame: 120, traffic: 5, showcase: 3 },
+];
+const UPGRADE_MARKUP = 1.05;   // todas las mudanzas cuestan un 5 % más que el precio base de la tabla
+LOCALES.forEach(l => { l.cost = Math.round(l.cost * UPGRADE_MARKUP / 5) * 5; });
+let RENT = LOCALES[0].rent;   // alquiler diario: lo fija el local actual (ver applyLocal)
+
+// ---------- Sistema Player / Aficionado ----------
+// Hasta PLAYER_FROM-1 las camisetas son normales (sin etiqueta ni versión). Desde PLAYER_FROM, cada una sale
+// Player (PLAYER_CHANCE) o Aficionado (el resto) y siempre lleva etiqueta.
+const PLAYER_FROM = 1991;     // primer año con versiones
+const PLAYER_CHANCE = 0.25;   // prob. de que una camiseta sea Player
+const PLAYER_MULT = 1.19;     // valor de una Player respecto a una Aficionado (configurable)
+const PLAYER_FAKE = 0.05;     // +5 puntos porcentuales de prob. de falsificación en las Player
 
 // ---------- Packs y lotes ----------
 // Cada fuente vende lotes con descuento por cantidad:
@@ -101,6 +139,18 @@ const nice = n => (n < 50 ? Math.round(n) : Math.round(n / 5) * 5);
 const kitOf = it => KIT_BY_ID[it.kitId];
 const title = it => `${kitOf(it).team} ${kitOf(it).year}`;
 
+// Versión de la camiseta: null (sin versión, hasta 1990), 'player' o 'aficionado'
+const hasTier = it => kitOf(it).year >= PLAYER_FROM;
+const isPlayer = it => hasTier(it) && it.player === true;
+const tierOf = it => (!hasTier(it) ? null : it.player ? 'player' : 'aficionado');
+// Asigna la versión a piezas que aún no la tienen (partidas guardadas antiguas)
+function ensureTier(it) {
+  if (!it) return it;
+  if (!hasTier(it)) { delete it.player; return it; }
+  if (typeof it.player !== 'boolean') it.player = Math.random() < PLAYER_CHANCE;
+  return it;
+}
+
 function weighted(items, wf) {
   const total = items.reduce((s, x) => s + wf(x), 0);
   let r = Math.random() * total;
@@ -114,7 +164,7 @@ function weighted(items, wf) {
 // ---------- Estado ----------
 function newGame() {
   S = {
-    day: 1, money: 600, rep: 5, xp: 0, shelfCap: 10, upgrades: 0,
+    day: 1, money: 600, rep: 5, xp: 0, local: 0, shelfCap: LOCALES[0].cap, upgrades: 0,
     stock: [], market: [], trends: {}, fakeBoost: 0, traffic: 0,
     pendingReturns: [], news: [], nextUid: 1, nextOffer: 1,
     stats: { sold: 0, profit: 0, revenue: 0 },
@@ -122,6 +172,7 @@ function newGame() {
     featured: [], view: { filter: 'all', sort: 'manual', mode: 'cards', v3: true }, marketSort: 'ganga', sizeLost: {},
     collection: [], cview: { sort: 'cond', filter: 'all' },   // colección: piezas apartadas de la tienda
   };
+  applyLocal();
   S.market = genMarket();
   S.packs = genPacks(true);   // el primer día siempre hay al menos un lote
   S.news.unshift({ day: 1, text: 'Abres la tienda. Compra barato, vende bien y cuida tu reputación.' });
@@ -158,7 +209,7 @@ function trendMult(kit) {
 
 function valueIfReal(it) {
   const kit = kitOf(it);
-  return kit.base * COND[it.cond].coef * SIZES[it.size] * (it.special ? 2.2 : 1) * trendMult(kit)
+  return kit.base * COND[it.cond].coef * SIZES[it.size] * (it.special ? 2.2 : 1) * trendMult(kit) * (isPlayer(it) ? PLAYER_MULT : 1)
     * (typeof restoreMult === 'function' ? restoreMult(it) : 1);
 }
 const replicaValue = it => Math.max(4, valueIfReal(it) * 0.08);
@@ -227,8 +278,9 @@ function genItem(filter) {
   const ft = fame().tier;   // con fama, los vendedores te traen más piezas raras
   const pool = filter ? KITS.filter(filter) : KITS;
   const kit = weighted(pool.length ? pool : KITS, x => ({ 1: 10, 2: 6, 3: 3, 4: 1.3 })[x.rarity] * (x.rarity >= 3 ? 1 + 0.2 * ft : 1));
-  const fakeChance = 0.08 + 0.05 * (kit.rarity - 1) + (S.fakeBoost > 0 ? 0.2 : 0);
-  return {
+  const player = kit.year >= PLAYER_FROM ? Math.random() < PLAYER_CHANCE : undefined;
+  const fakeChance = 0.08 + 0.05 * (kit.rarity - 1) + (S.fakeBoost > 0 ? 0.2 : 0) + (player ? PLAYER_FAKE : 0);
+  const item = {
     uid: S.nextUid++,
     kitId: kit.id,
     cond: weighted(CONDITIONS, c => c.w).id,
@@ -240,6 +292,8 @@ function genItem(filter) {
     listPrice: 0,
     bias: rand(-1, 1),
   };
+  if (player !== undefined) item.player = player;
+  return item;
 }
 
 function genOffer() {
@@ -270,7 +324,7 @@ function genPackItem(src, filter) {
   const f = filter || minR ? (x => (!filter || filter(x)) && x.rarity >= minR) : null;
   const it = genItem(f);
   if (src.cond) it.cond = weighted(CONDITIONS.filter(c => src.cond[c.id] > 0), c => src.cond[c.id]).id;
-  if (src.real != null) it.real = Math.random() < src.real - (S.fakeBoost > 0 ? src.boost : 0);
+  if (src.real != null) it.real = Math.random() < src.real - (S.fakeBoost > 0 ? src.boost : 0) - (isPlayer(it) ? PLAYER_FAKE : 0);
   return it;
 }
 
@@ -359,12 +413,21 @@ function estimateText(it) {
   return `${fmt(e.low)} – ${fmt(e.high)}`;
 }
 
+// Etiqueta de versión: «🎽 Player» (dorada/grafito) o «Aficionado» (neutra). Sin etiqueta antes de 1991.
+function tierChip(it) {
+  const t = tierOf(it);
+  if (!t) return '';
+  return t === 'player'
+    ? '<span class="chip player" title="Versión Player: vale más, pero es más delicada y se falsifica más">🎽 Player</span>'
+    : '<span class="chip aficionado" title="Versión Aficionado">Aficionado</span>';
+}
+
 const COND_SHORT = { nueva: 'Nueva', excelente: 'Excelente', buena: 'Buena', usada: 'Usada' };
 
 function itemHead(it) {
   const kit = kitOf(it);
   const inStock = S.stock.includes(it);
-  const status = [it.special ? '<span class="chip good">✍️ Firmada · ×2,2 de valor</span>' : '', authChip(it), typeof ownedChip === 'function' ? ownedChip(it) : '', trendChip(kit), inStock ? fameChip(it) : '', inStock && typeof restoreChips === 'function' ? restoreChips(it) : ''].join('');
+  const status = [it.special ? '<span class="chip good">✍️ Firmada · ×2,2 de valor</span>' : '', tierChip(it), authChip(it), typeof ownedChip === 'function' ? ownedChip(it) : '', trendChip(kit), inStock ? fameChip(it) : '', inStock && typeof restoreChips === 'function' ? restoreChips(it) : ''].join('');
   return `
     <div class="thumb">${kitImage(kit, it)}${it.special ? '<span class="signed">Firmada</span>' : ''}</div>
     <div class="info">
@@ -407,7 +470,7 @@ function marketCard(o) {
       <div class="mc-body">
         <h3>${kit.team} ${kit.year}</h3>
         <p class="mc-sub">${kit.type} · ${kit.brand}</p>
-        <div class="mc-pills"><span class="chip size">${it.size}</span><span class="chip">${COND_SHORT[it.cond] || COND[it.cond].label}</span>${authChip(it)}${trendChip(kit)}</div>
+        <div class="mc-pills"><span class="chip size">${it.size}</span><span class="chip">${COND_SHORT[it.cond] || COND[it.cond].label}</span>${tierChip(it)}${authChip(it)}${trendChip(kit)}</div>
         <p class="mc-est">Valoración <b>${estimateText(it)}</b></p>
       </div>
       <div class="mc-seller"><span class="mc-avatar">${s.emoji}</span><span class="mc-who"><b>${o.name}</b><small>${s.label}</small></span></div>
@@ -420,7 +483,7 @@ function marketCard(o) {
 
 // ---------- Tienda: piezas reutilizables ----------
 const suggestedPrice = it => nice(estimate(it).mid * 1.2);
-const maxFeatured = () => FEATURED_BASE;
+const maxFeatured = () => local().showcase;
 const itemAge = it => S.day - (it.since || S.day);
 
 function marginHTML(it) {
@@ -476,7 +539,7 @@ function shopRow(it, pos) {
       <div class="thumb">${kitImage(kit, it)}</div>
       <div class="row-main">
         <h3>${kit.team} ${kit.year} <small>${kit.type}</small></h3>
-        <div class="chips"><span class="chip size">${it.size}</span><span class="chip">${COND[it.cond].label}</span>${authChip(it)}${trendChip(kit)}${fameChip(it)}</div>
+        <div class="chips"><span class="chip size">${it.size}</span><span class="chip">${COND[it.cond].label}</span>${tierChip(it)}${authChip(it)}${trendChip(kit)}${fameChip(it)}</div>
         <p class="seller">Pagaste ${fmt(it.paid)} · ${marginHTML(it)} · ${itemAge(it)} d</p>
         ${authBtn(it, 'sm')}${typeof collectBtn === 'function' ? collectBtn(it, 'sm') : ''}${typeof restoreBtn === 'function' ? restoreBtn(it, 'sm') : ''}
       </div>
@@ -497,7 +560,7 @@ function shopTile(it, pos, hero) {
       <div class="thumb">${kitImage(kit, it)}${it.special ? '<span class="signed">Firmada</span>' : ''}${it.locked ? '<span class="lock-flag">🔒 No se vende</span>' : ''}</div>
       <div class="plate">
         <h3>${kit.team} ${kit.year}</h3>
-        <p class="sub">${kit.type} · Talla ${it.size} · ${COND[it.cond].label}${hero ? ` · ${RARITY_LABELS[kit.rarity]}` : ''}</p>
+        <p class="sub">${kit.type} · Talla ${it.size} · ${COND[it.cond].label}${tierOf(it) === 'player' ? ' · 🎽 Player' : ''}${hero ? ` · ${RARITY_LABELS[kit.rarity]}` : ''}</p>
       </div>
       <div class="tile-price">${miniPrice(it)}${lockBtn(it)}</div>
       <div class="tile-foot">${moveBtns(it, pos)}<span class="seller">${marginHTML(it)}</span></div>
@@ -505,7 +568,7 @@ function shopTile(it, pos, hero) {
 }
 
 // ---------- Tienda: organización ----------
-const FILTERS = [['all', 'Todo'], ['nat', 'Selecciones'], ['club', 'Clubes'], ['gk', 'Porteros'], ['rare', 'Raras'], ['unver', 'Sin verificar']];
+const FILTERS = [['all', 'Todo'], ['nat', 'Selecciones'], ['club', 'Clubes'], ['gk', 'Porteros'], ['rare', 'Raras'], ['player', '🎽 Player'], ['unver', 'Sin verificar']];
 const SORTS = [['manual', 'Mi orden'], ['recent', 'Más recientes'], ['margin', 'Mayor margen'], ['price', 'Mayor precio'], ['year', 'Más antiguas'], ['team', 'Equipo A-Z']];
 
 const FILTER_TESTS = {
@@ -513,6 +576,7 @@ const FILTER_TESTS = {
   club: it => !kitOf(it).nat && kitOf(it).type !== 'Portero',
   gk: it => kitOf(it).type === 'Portero',
   rare: it => kitOf(it).rarity >= 3 || it.special,
+  player: it => isPlayer(it),
   unver: it => !it.verified,
 };
 const SORT_FNS = {
@@ -554,7 +618,7 @@ function showcaseHTML() {
   const value = items.reduce((s, it) => s + it.listPrice, 0);
   const margin = items.reduce((s, it) => s + it.listPrice - it.paid, 0);
   const pts = Math.round(items.reduce((s, it) => s + fameOf(it), 0) * 10) / 10;
-  const tierName = FAME_TIERS[fame().tier].name;
+  const tierName = `${local().icon} ${local().name} · ${FAME_TIERS[fame().tier].name}`;
   return `<div class="sc-awning" aria-hidden="true"></div>
     <div class="sc-window">
       <div class="showcase-head">
@@ -707,7 +771,10 @@ function fameBarHTML(f) {
 function renderShop(f = fame()) {
   $('#fame-bar').innerHTML = fameBarHTML(f);
   $('#shop-cap').textContent = `${S.stock.length}/${S.shelfCap} perchas ocupadas`;
-  $('#btn-upgrade').textContent = `Ampliar (${fmt(upgradeCost())})`;
+  renderLocalBox(f);
+  const nx = nextLocal();
+  $('#btn-upgrade').textContent = nx ? `Mudarse (${fmt(nx.cost)})` : 'Local máximo';
+  $('#btn-upgrade').disabled = !nx;
   $('#shop-showcase').innerHTML = showcaseHTML();
   $('#shop-tools').innerHTML = shopToolsHTML();
 
@@ -841,15 +908,86 @@ function closeDialog() {
 
 function log(text) { S.news.unshift({ day: S.day, text }); }
 // ---------- Tienda: acciones ----------
-function upgradeCost() { return 150 + 100 * S.upgrades; }
+// ---------- Locales: lógica ----------
+const local = () => LOCALES[clamp(S.local || 0, 0, LOCALES.length - 1)];
+const nextLocal = () => LOCALES[(S.local || 0) + 1] || null;
+function upgradeCost() { const n = nextLocal(); return n ? n.cost : 0; }
 
-function upgradeShop() {
-  const c = upgradeCost();
-  if (S.money < c) { toast('No tienes caja para ampliar.'); return; }
-  S.money -= c;
-  S.shelfCap += 6;
-  S.upgrades++;
-  log(`Amplías la tienda: ahora tienes ${S.shelfCap} perchas.`);
+// Aplica al estado lo que da el local actual (perchas y alquiler)
+function applyLocal() {
+  const l = local();
+  S.shelfCap = l.cap;
+  S.upgrades = S.local;   // compatibilidad con código que lo lea
+  RENT = l.rent;
+}
+
+function localBoxHTML(f) {
+  const l = local(), n = nextLocal();
+  const steps = LOCALES.map((x, i) => `<span class="lc-dot${i < S.local ? ' done' : i === S.local ? ' now' : ''}" title="${x.name}">${x.icon}</span>`).join('');
+  let next;
+  if (n) {
+    const okM = S.money >= n.cost, okF = f.score >= n.minFame;
+    const pct = clamp(S.money / n.cost * 100, 0, 100);
+    next = `<div class="lc-next">
+      <p>Siguiente: <b>${n.icon} ${n.name}</b> · ${n.cap} perchas · alquiler ${fmt(n.rent)}/día</p>
+      <div class="fame-track"><div style="width:${pct}%"></div></div>
+      <small class="lc-req"><span class="${okM ? 'ok' : 'no'}">${okM ? '✔' : '✖'} ${fmt(n.cost)} en caja</span>${n.minFame ? ` · <span class="${okF ? 'ok' : 'no'}">${okF ? '✔' : '✖'} ${n.minFame} pts de fama (tienes ${f.score})</span>` : ''}</small>
+    </div>`;
+  } else {
+    next = '<small class="lc-req">Has llegado al mejor local de la ciudad.</small>';
+  }
+  return `<div class="lc-head"><b>${l.icon} ${l.name}</b><span>${l.zone}</span></div>
+    <p class="lc-desc">${l.desc}</p>
+    <div class="lc-stats"><span>📦 ${l.cap} perchas</span><span>🪟 ${l.showcase} en escaparate</span><span>🏠 ${fmt(l.rent)}/día</span>${l.traffic ? `<span>🧍 +${l.traffic} clientes/día</span>` : ''}</div>
+    <div class="lc-steps" aria-label="Progresión de locales">${steps}</div>
+    ${next}`;
+}
+
+function renderLocalBox(f = fame()) {
+  let box = $('#local-box');
+  if (!box) {
+    box = document.createElement('section');
+    box.id = 'local-box';
+    box.className = 'local-box';
+    const anchor = $('#fame-bar');
+    anchor.parentNode.insertBefore(box, anchor);
+  }
+  box.innerHTML = localBoxHTML(f);
+}
+
+// Mudarse al siguiente local: cuesta dinero (y algo de fama a partir del tercero)
+async function upgradeShop() {
+  if (S.busy) return;
+  const n = nextLocal();
+  if (!n) { toast('Ya tienes el mejor local de la ciudad.'); return; }
+  if (S.money < n.cost) { toast(`Te faltan ${fmt(n.cost - S.money)} para mudarte a «${n.name}».`); return; }
+  const f = fame();
+  if (f.score < n.minFame) { toast(`Para mudarte a «${n.name}» necesitas ${n.minFame} pts de fama (tienes ${f.score}).`); return; }
+  const cur = local();
+  const left = S.money - n.cost;
+  const warn = left < n.rent * 3
+    ? `<p class="dr-more">⚠️ Te quedarán ${fmt(left)} en caja: ojo con el alquiler y con tener dinero para comprar género.</p>` : '';
+  const r = await dialog(`
+    <div class="report">
+      <h3>${n.icon} ${n.name}</h3>
+      <p>${n.desc}</p>
+      <ul>
+        <li>Perchas: <b>${cur.cap} → ${n.cap}</b></li>
+        <li>Escaparate: <b>${cur.showcase} → ${n.showcase}</b> ${n.showcase === 1 ? 'hueco' : 'huecos'}</li>
+        <li>Alquiler diario: <b>${fmt(cur.rent)} → ${fmt(n.rent)}</b></li>
+        <li>Clientes extra al día: <b>+${cur.traffic} → +${n.traffic}</b></li>
+        <li>Coste de la mudanza: <b>${fmt(n.cost)}</b></li>
+      </ul>
+      ${warn}
+      <div class="actions"><button class="btn primary" data-choice="yes">Mudarme</button><button class="btn ghost" data-choice="no">Ahora no</button></div>
+    </div>`);
+  closeDialog();
+  if (r.choice !== 'yes') return;
+  S.money -= n.cost;
+  S.local++;
+  applyLocal();
+  log(`Te mudas a «${n.name}» (${n.zone}): ahora tienes ${S.shelfCap} perchas y pagas ${fmt(RENT)} de alquiler al día.`);
+  toast(`¡Nuevo local! ${n.name}: ${S.shelfCap} perchas.`);
   save(); renderAll();
 }
 
@@ -886,7 +1024,7 @@ function startOfDayEvents() {
     S.trends[key].left--;
     if (S.trends[key].left <= 0) delete S.trends[key];
   });
-  S.traffic = 0;
+  S.traffic = local().traffic;   // clientes extra por la zona del local
   if (S.fakeBoost > 0) S.fakeBoost--;
 
   if (Math.random() < 0.55) {
@@ -899,7 +1037,7 @@ function startOfDayEvents() {
       S.trends.__nat = { mult: +rand(ev.mult[0], ev.mult[1]).toFixed(2), left: randInt(ev.days[0], ev.days[1]) };
       log(ev.text());
     } else if (ev.kind === 'traffic') {
-      S.traffic = randInt(ev.extra[0], ev.extra[1]);
+      S.traffic += randInt(ev.extra[0], ev.extra[1]);
       log(ev.text());
     } else if (ev.kind === 'fakes') {
       S.fakeBoost = randInt(ev.days[0], ev.days[1]);
@@ -1030,6 +1168,7 @@ async function intro() {
         <li>Fija tu precio en <b>Tienda</b> y pulsa «Abrir tienda» para atender clientes.</li>
         <li>En <b>Tienda</b> pon tus mejores piezas en el escaparate con ⭐ (los clientes las ven antes) y ordénalas con ◀ ▶. Ojo: los clientes piden una talla concreta.</li>
         <li>En <b>Colección</b> aparta tus camisetas <b>originales</b> (autenticadas) para exponerlas: no se venden y, cuanto mejor estado, más puntos, fama y entradas diarias.</li>
+        <li>Empiezas en un <b>localito del barrio</b> con pocas perchas. Reúne caja (y fama) para <b>mudarte</b> a locales mejores: más perchas y más clientes, pero también más alquiler.</li>
         <li>Cada día pagas ${fmt(RENT)} de alquiler. Objetivo: ${fmt(GOAL)} de patrimonio.</li>
       </ul>
       <div class="actions"><button class="btn primary" data-choice="ok">Empezar</button></div>
@@ -1098,9 +1237,16 @@ function bind() {
 function init() {
   S = load() || newGame();
   S.busy = false;
+  if (typeof S.local !== 'number') {   // partida antigua: el local que más se acerque a sus perchas sin quitarle ninguna
+    const i = LOCALES.findIndex(l => l.cap >= (S.shelfCap || 0));
+    S.local = i < 0 ? LOCALES.length - 1 : i;
+  }
+  applyLocal();
   S.featured = S.featured || []; S.sizeLost = S.sizeLost || {};
   S.collection = S.collection || []; S.cview = S.cview || { sort: 'cond', filter: 'all' };
   if (!S.packs) S.packs = genPacks();
+  // partidas antiguas: reparte la versión Player/Aficionado entre las piezas que no la tenían
+  [].concat(S.stock, S.collection, S.market.map(o => o.item), ...S.packs.map(p => p.items.map(x => x.item))).forEach(ensureTier);
   if (!S.view || !S.view.v3) S.view = { filter: 'all', sort: 'manual', mode: 'cards', v3: true }; S.marketSort = S.marketSort || 'ganga';
   bind();
   renderAll();
