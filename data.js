@@ -21,14 +21,14 @@
 // Si añades una selección nueva, añade también su bandera en FLAGS.
 
 const FLAGS = {
-  'Alemania': '🇩🇪', 'Argentina': '🇦🇷', 'Bélgica': '🇧🇪', 'Brasil': '🇧🇷', 'Bulgaria': '🇧🇬', 'Camerún': '🇨🇲', 'China': '🇨🇳',
-  'Colombia': '🇨🇴', 'Croacia': '🇭🇷', 'Dinamarca': '🇩🇰', 'Escocia': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'Alemania': '🇩🇪', 'Argentina': '🇦🇷', 'Australia': '🇦🇺', 'Bélgica': '🇧🇪', 'Brasil': '🇧🇷', 'Bulgaria': '🇧🇬', 'Camerún': '🇨🇲', 'China': '🇨🇳',
+  'Colombia': '🇨🇴', 'Croacia': '🇭🇷', 'Dinamarca': '🇩🇰', 'Egipto': '🇪🇬', 'Escocia': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
   'España': '🇪🇸', 'Francia': '🇫🇷', 'Inglaterra': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Irlanda': '🇮🇪', 'Islandia': '🇮🇸',
   'Gales': '\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}', 'Grecia': '🇬🇷',
   'Italia': '🇮🇹', 'Jamaica': '🇯🇲', 'Japón': '🇯🇵', 'Kazajistán': '🇰🇿', 'Letonia': '🇱🇻',
-  'México': '🇲🇽', 'Nigeria': '🇳🇬', 'Noruega': '🇳🇴', 'Países Bajos': '🇳🇱', 'Polonia': '🇵🇱', 'Portugal': '🇵🇹',
+  'Marruecos': '🇲🇦', 'México': '🇲🇽', 'Nigeria': '🇳🇬', 'Noruega': '🇳🇴', 'Países Bajos': '🇳🇱', 'Perú': '🇵🇪', 'Polonia': '🇵🇱', 'Portugal': '🇵🇹',
   'República Checa': '🇨🇿',
-  'Rumanía': '🇷🇴', 'Senegal': '🇸🇳', 'Sudáfrica': '🇿🇦', 'Suecia': '🇸🇪', 'Suiza': '🇨🇭',
+  'Rumanía': '🇷🇴', 'Rusia': '🇷🇺', 'Senegal': '🇸🇳', 'Serbia': '🇷🇸', 'Sudáfrica': '🇿🇦', 'Suecia': '🇸🇪', 'Suiza': '🇨🇭',
   'Turquía': '🇹🇷', 'Uruguay': '🇺🇾',
 };
 
@@ -40,21 +40,24 @@ function k(team, year, type, brand, base, rarity, c1, c2, pattern, nat, c3, c4) 
 }
 
 const KITS = [
-  // ===== SELECCIONES (85) =====
+  // ===== SELECCIONES (117) =====
   k('Alemania', 1990, 'Local', 'Adidas', 230, 3, '#FFFFFF', '#111111', 'vtri', true, '#DD0000', '#FFCE00'),   // KA: Graphic
   k('Alemania', 1990, 'Portero', 'Adidas', 130, 3, '#2E8B57', '#111111', 'solid', true),
   k('Alemania', 1998, 'Visitante', 'Adidas', 170, 3, '#1E6B3A', '#FFFFFF', 'band', true),   // KA: Single stripe, Green / White
   k('Alemania', 2006, 'Local', 'Adidas', 240, 4, '#FFFFFF', '#111111', 'graphic', true),
   k('Alemania', 2014, 'Local', 'Adidas', 230, 4, '#FFFFFF', '#D4001B', 'chevron', true, '#111111'),   // KA: Chevron, White / Red / Black (Mundial 2014)
+  k('Alemania', 2018, 'Local', 'Adidas', 140, 2, '#FFFFFF', '#111111', 'graphic', true, '#8C9199'),   // KA: Graphic, White / Black (Mundial 2018; guiño a la de 1990)
 
   k('Argentina', 1978, 'Local', 'Adidas', 260, 4, '#FFFFFF', '#75AADB', 'stripes', true),   // KA: Adidas, White / Sky blue
   k('Argentina', 1986, 'Local', 'Le Coq Sportif', 280, 4, '#FFFFFF', '#75AADB', 'stripes', true),
   k('Argentina', 1994, 'Local', 'Adidas', 220, 3, '#FFFFFF', '#75AADB', 'stripes', true),   // Mundial 1994
   k('Argentina', 2010, 'Visitante', 'Adidas', 95, 1, '#1F4FA3', '#FFFFFF', 'solid', true),
   k('Argentina', 2014, 'Local', 'Adidas', 150, 3, '#FFFFFF', '#75AADB', 'stripes', true),   // Mundial 2014
+  k('Argentina', 2018, 'Local', 'Adidas', 130, 2, '#FFFFFF', '#75AADB', 'stripes', true),   // KA: Stripes, Sky blue / White (Mundial 2018)
   k('Argentina', 2022, 'Visitante', 'Adidas', 190, 3, '#6A3FA0', '#E6B8FF', 'solid', true),   // violeta del Mundial de Qatar 2022
   k('Argentina', 2022, 'Local', 'Adidas', 200, 3, '#FFFFFF', '#75AADB', 'stripes', true),
 
+  k('Australia', 2018, 'Local', 'Nike', 110, 2, '#FFCD00', '#00843D', 'solid', true, '#00843D'),   // Mundial 2018; amarillo con cuello y detalles verdes
   k('Bélgica', 2018, 'Local', 'Adidas', 140, 2, '#D4001B', '#FFD500', 'solid', true, '#111111'),   // KA: Graphic, Red / Yellow / Black (Mundial 2018; rombos en el pecho)
 
   k('Brasil', 1970, 'Local', 'Athleta', 320, 4, '#FFD500', '#0A8F3C', 'solid', true),
@@ -64,6 +67,7 @@ const KITS = [
   k('Brasil', 1998, 'Visitante', 'Nike', 160, 3, '#1B3E9A', '#FFD500', 'sleeves', true),
   k('Brasil', 2004, 'Local', 'Nike', 130, 2, '#FFD500', '#0A8F3C', 'solid', true),   // Copa América 2004
   k('Brasil', 2014, 'Local', 'Nike', 120, 2, '#FFD500', '#0A8F3C', 'solid', true),   // Mundial 2014
+  k('Brasil', 2018, 'Local', 'Nike', 110, 2, '#FFD500', '#0A8F3C', 'solid', true, '#1B3E9A'),   // KA: Plain, Yellow / Green / Blue (Mundial 2018)
 
   k('Bulgaria', 1994, 'Local', 'Adidas', 200, 3, '#FFFFFF', '#00966E', 'solid', true, '#D62612'),   // KA: Plain, White / Green / Red (Mundial 1994)
 
@@ -75,13 +79,18 @@ const KITS = [
   k('Colombia', 1990, 'Local', 'Adidas', 280, 4, '#FCD116', '#003893', 'solid', true),
   k('Colombia', 1994, 'Local', 'Adidas', 200, 3, '#FCD116', '#003893', 'solid', true),
   k('Colombia', 2014, 'Local', 'Adidas', 140, 3, '#FCD116', '#003893', 'solid', true),   // Mundial 2014
+  k('Colombia', 2018, 'Local', 'Adidas', 140, 2, '#FCD116', '#CE1126', 'graphic', true, '#003893'),   // KA: Graphic, Yellow / Red / Blue (Mundial 2018; homenaje a la de 1990)
 
   k('Croacia', 1998, 'Local', 'Lotto', 240, 4, '#FFFFFF', '#D8232A', 'checks', true),
   k('Croacia', 2016, 'Local', 'Nike', 130, 2, '#FFFFFF', '#D8232A', 'checks', true),   // Eurocopa 2016
+  k('Croacia', 2018, 'Local', 'Nike', 180, 3, '#FFFFFF', '#D8232A', 'checks', true),   // KA: Checkers, Red / White (Mundial 2018, subcampeona)
 
   k('Dinamarca', 1992, 'Local', 'Hummel', 280, 4, '#C60C30', '#FFFFFF', 'sleeves', true),   // KA: Graphic
   k('Dinamarca', 1992, 'Visitante', 'Hummel', 230, 4, '#FFFFFF', '#C60C30', 'pinstripes', true, '#14235E'),   // KA: Stripes
+  k('Dinamarca', 2018, 'Local', 'Hummel', 120, 2, '#C60C30', '#FFFFFF', 'solid', true, '#14235E'),   // KA: Plain, Red / White / Blue (Mundial 2018; cruz danesa en tono sobre tono)
+  k('Dinamarca', 2018, 'Visitante', 'Hummel', 100, 2, '#FFFFFF', '#C60C30', 'solid', true, '#14235E'),   // KA: Plain, White / Red (Mundial 2018)
 
+  k('Egipto', 2018, 'Local', 'Adidas', 120, 2, '#CE1126', '#111111', 'solid', true, '#FFFFFF'),   // Mundial 2018; rojo con detalles negros y blancos
   k('Escocia', 1996, 'Local', 'Umbro', 110, 2, '#0B2C6B', '#FFFFFF', 'solid', true),
 
   k('España', 1994, 'Local', 'Adidas', 150, 3, '#D40000', '#F5C400', 'solid', true),
@@ -90,10 +99,12 @@ const KITS = [
   k('España', 2010, 'Visitante', 'Adidas', 170, 3, '#14235E', '#C8102E', 'solid', true),   // KA: Plain, Navy / Red / Yellow (Mundial 2010)
   k('España', 2012, 'Local', 'Adidas', 100, 2, '#C8102E', '#F5C400', 'solid', true),
   k('España', 2012, 'Visitante', 'Adidas', 140, 3, '#6EC6E6', '#111111', 'sash', true),   // KA: Sash, Sky blue / Black (Eurocopa 2012; la turquesa)
+  k('España', 2018, 'Local', 'Adidas', 120, 2, '#C8102E', '#F5C400', 'solid', true, '#14235E'),   // KA: Plain, Red / Yellow (Mundial 2018)
 
   k('Francia', 1998, 'Local', 'Adidas', 260, 4, '#0B2C8A', '#D52B1E', 'solid', true),
   k('Francia', 1998, 'Visitante', 'Adidas', 180, 3, '#FFFFFF', '#0B2C8A', 'hoops', true, '#D52B1E'),   // KA: Hoops, White / Red / Blue
   k('Francia', 2016, 'Local', 'Nike', 90, 1, '#0B2C8A', '#D52B1E', 'solid', true),   // Eurocopa 2016
+  k('Francia', 2018, 'Local', 'Nike', 200, 3, '#0B1F4F', '#2F6FDB', 'sleeves', true),   // KA: Contrasting sleeves, Navy / Blue (Mundial 2018, campeona)
   k('Francia', 2018, 'Visitante', 'Nike', 100, 2, '#FFFFFF', '#1E3A8A', 'graphic', true),
 
   k('Gales', 2016, 'Local', 'Adidas', 130, 2, '#C8102E', '#FFFFFF', 'solid', true),   // KA: Plain, Red / White (Eurocopa 2016)
@@ -106,11 +117,13 @@ const KITS = [
   k('Inglaterra', 1996, 'Local', 'Umbro', 180, 3, '#FFFFFF', '#1C2D6B', 'solid', true),
   k('Inglaterra', 1996, 'Portero', 'Umbro', 120, 2, '#2A2A8C', '#E8452C', 'chevron', true),
   k('Inglaterra', 2012, 'Local', 'Umbro', 90, 1, '#FFFFFF', '#1C2D6B', 'solid', true),   // Eurocopa 2012
+  k('Inglaterra', 2018, 'Local', 'Nike', 100, 2, '#FFFFFF', '#C8102E', 'solid', true, '#1C2D6B'),   // KA: Plain, White / Red (Mundial 2018)
 
   k('Irlanda', 1994, 'Local', 'Adidas', 120, 2, '#169B62', '#FFFFFF', 'yoke', true),
 
   k('Islandia', 2016, 'Local', 'Errea', 120, 2, '#02529C', '#DC1E35', 'vband', true),   // KA: Single stripe, Blue / Red / White (Eurocopa 2016)
   k('Islandia', 2016, 'Visitante', 'Errea', 110, 2, '#FFFFFF', '#DC1E35', 'vband', true),   // KA: Single stripe, White / Blue / Red (Eurocopa 2016)
+  k('Islandia', 2018, 'Local', 'Errea', 130, 2, '#02529C', '#FFFFFF', 'solid', true, '#DC1E35'),   // KA: Plain, Blue / White / Red (Mundial 2018, debut mundialista)
 
   k('Italia', 1982, 'Local', 'Le Coq Sportif', 250, 4, '#0057B8', '#FFFFFF', 'solid', true),   // KA: Plain, Blue / White / Red, Le Coq Sportif
   k('Italia', 1990, 'Local', 'Diadora', 175, 3, '#0057B8', '#FFFFFF', 'solid', true),
@@ -120,6 +133,7 @@ const KITS = [
   k('Jamaica', 1998, 'Local', 'Kappa', 190, 4, '#FED100', '#009B3A', 'yoke', true),
 
   k('Japón', 1998, 'Local', 'Asics', 150, 3, '#1B3E9A', '#FFFFFF', 'graphic', true, '#6C8FE0'),
+  k('Japón', 2018, 'Local', 'Adidas', 130, 2, '#1B3E9A', '#FFFFFF', 'pinstripes', true, '#6C8FE0'),   // KA: Pinstripes, Blue / White (Mundial 2018; estampado inspirado en la armadura samurái)
 
   k('Kazajistán', 2006, 'Local', 'Diadora', 120, 3, '#0A5EB0', '#FFD500', 'solid', true, '#FFFFFF'),   // KA: Plain, Blue / Yellow / White (06-07)
   k('Kazajistán', 2014, 'Visitante', 'Adidas', 70, 1, '#F7D117', '#0A5EB0', 'solid', true),   // KA: Plain, Yellow / Blue (14-15)
@@ -128,10 +142,14 @@ const KITS = [
 
   k('Letonia', 1992, 'Local', 'Sin marca', 150, 3, '#7B1E3A', '#FFFFFF', 'graphic', true, '#E8A3BE'),
 
+  k('Marruecos', 2018, 'Local', 'Adidas', 120, 2, '#C1272D', '#006233', 'solid', true),   // Mundial 2018; rojo con cuello y detalles verdes
   k('México', 1998, 'Local', 'Umbro', 170, 3, '#006847', '#FFFFFF', 'solid', true),
+  k('México', 2018, 'Local', 'Adidas', 110, 2, '#006847', '#FFFFFF', 'graphic', true, '#CE1126'),   // Mundial 2018; verde con estampado gráfico al frente (estilo 1994)
 
   k('Nigeria', 1994, 'Local', 'Nike', 240, 4, '#FFFFFF', '#008751', 'chevron', true),
   k('Nigeria', 1998, 'Local', 'Nike', 200, 3, '#2E9B3F', '#FFFFFF', 'zigzag', true),
+  k('Nigeria', 2018, 'Local', 'Nike', 210, 3, '#008751', '#FFFFFF', 'chevron', true, '#111111'),   // KA: Chevron, Green / White / Black (Mundial 2018; homenaje a la de 1994)
+  k('Nigeria', 2018, 'Visitante', 'Nike', 160, 3, '#0F5C32', '#0F5C32', 'solid', true),   // KA: Plain, Green (Mundial 2018)
 
   k('Noruega', 1998, 'Local', 'Umbro', 170, 3, '#D4001B', '#FFFFFF', 'solid', true, '#14235E'),   // KA: Plain, Red / White / Navy (Mundial 1998)
 
@@ -141,29 +159,41 @@ const KITS = [
   k('Países Bajos', 2013, 'Visitante', 'Nike', 95, 1, '#003DA5', '#FF6A13', 'solid', true),
   k('Países Bajos', 2014, 'Local', 'Nike', 130, 2, '#FF6A13', '#FFFFFF', 'solid', true),   // Mundial 2014
 
+  k('Perú', 2018, 'Local', 'Umbro', 140, 2, '#FFFFFF', '#D91023', 'sash', true),   // Mundial 2018; blanca con banda diagonal roja
   k('Polonia', 1982, 'Local', 'Adidas', 250, 4, '#FFFFFF', '#D4001B', 'pinstripes', true),   // KA: Pinstripes, White / Red (Mundial 1982, tercer puesto)
+  k('Polonia', 2018, 'Local', 'Nike', 110, 2, '#FFFFFF', '#D4001B', 'sash', true),   // KA: Diagonal, White / Red (Mundial 2018)
+  k('Polonia', 2018, 'Visitante', 'Nike', 100, 2, '#D4001B', '#FFFFFF', 'sash', true),   // KA: Diagonal, Red / White (Mundial 2018)
 
   k('Portugal', 1996, 'Local', 'Nike', 130, 2, '#C8102E', '#006600', 'solid', true),
   k('Portugal', 2004, 'Local', 'Nike', 190, 3, '#C8102E', '#006600', 'solid', true),
   k('Portugal', 2016, 'Local', 'Nike', 120, 2, '#C8102E', '#006600', 'solid', true),   // Eurocopa 2016
+  k('Portugal', 2018, 'Local', 'Nike', 120, 2, '#C8102E', '#006600', 'solid', true, '#C9A227'),   // Mundial 2018; rojo con logos dorados y cuello verde
 
   k('República Checa', 1996, 'Local', 'Puma', 190, 3, '#D4001B', '#11457E', 'solid', true, '#FFFFFF'),   // KA: Plain, Red / Blue / White (finalista de la Eurocopa 1996)
 
   k('Rumanía', 1994, 'Local', 'Adidas', 190, 3, '#FCD116', '#002B7F', 'solid', true),
 
+  k('Rusia', 2018, 'Local', 'Adidas', 130, 2, '#D01F2F', '#FFFFFF', 'graphic', true, '#1B3E9A'),   // Mundial 2018; roja con gráfico blanco/azul, inspirada en la URSS de 1988
   k('Senegal', 2002, 'Local', 'Puma', 160, 3, '#FFFFFF', '#00853F', 'band', true),
+  k('Senegal', 2018, 'Local', 'Puma', 110, 2, '#FFFFFF', '#00853F', 'graphic', true),   // KA: Graphic, White / Green (Mundial 2018)
+  k('Senegal', 2018, 'Visitante', 'Puma', 110, 2, '#00853F', '#FFFFFF', 'graphic', true),   // KA: Graphic, Green / White (Mundial 2018)
 
+  k('Serbia', 2018, 'Local', 'Puma', 110, 2, '#C6363C', '#0C4076', 'solid', true, '#FFFFFF'),   // Mundial 2018; roja con detalles azules y blancos
   k('Sudáfrica', 1998, 'Local', 'Adidas', 140, 2, '#FCD116', '#007749', 'wave', true),
 
   k('Suecia', 1994, 'Local', 'Adidas', 130, 2, '#FCD116', '#006AA7', 'band', true),
+  k('Suecia', 2018, 'Local', 'Adidas', 120, 2, '#FCD116', '#006AA7', 'solid', true),   // KA: Plain, Yellow / Blue (Mundial 2018)
+  k('Suecia', 2018, 'Visitante', 'Adidas', 110, 2, '#1F5AA6', '#0A2A66', 'checks', true, '#FCD116'),   // KA: Checkers, Blue / Navy / Yellow (Mundial 2018)
 
   k('Suiza', 2016, 'Visitante', 'Puma', 110, 2, '#FFFFFF', '#D52B1E', 'band', true),   // KA: Chest band, White / Red (Eurocopa 2016)
+  k('Suiza', 2018, 'Local', 'Puma', 100, 2, '#D52B1E', '#FFFFFF', 'graphic', true),   // KA: Graphic, Red / White (Mundial 2018)
 
   k('Turquía', 2002, 'Local', 'Adidas', 110, 2, '#E30A17', '#FFFFFF', 'solid', true),
 
   k('Unión Soviética', 1988, 'Local', 'Adidas', 210, 3, '#C8102E', '#FFFFFF', 'solid', true),   // KA: Graphic, Red / White (finalista de la Eurocopa 1988); sin bandera: escudo genérico
 
   k('Uruguay', 1990, 'Local', 'Umbro', 120, 2, '#6CB4E4', '#111111', 'solid', true),
+  k('Uruguay', 2018, 'Local', 'Puma', 120, 2, '#6CB4E4', '#111111', 'graphic', true),   // KA: Graphic, Sky blue / Black (Mundial 2018)
 
   k('Yugoslavia', 1990, 'Local', 'Adidas', 240, 4, '#1C4FA3', '#FFFFFF', 'pinstripes', true, '#D4001B'),   // KA: Pinstripes, Blue / Red / White (Mundial 1990); sin bandera: escudo genérico
 
